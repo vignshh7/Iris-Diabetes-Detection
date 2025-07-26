@@ -27,7 +27,7 @@ cd Iris-Diabetes-Detection
 pip install -r requirements.txt
 
 # Run the model
-python main.py
+python cnnpredict.py
 ```
 
 ## 📊 Models Used
