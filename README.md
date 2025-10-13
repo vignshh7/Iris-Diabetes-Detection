@@ -227,8 +227,8 @@ eye_project/
 
 ### Step 1: Clone Repository
 ```bash
-git clone <repository-url>
-cd eye_project
+git clone https://github.com/vignshh7/Iris-Diabetes-Detection.git
+cd Iris-Diabetes-Detection
 ```
 
 ### Step 2: Create Virtual Environment
@@ -391,12 +391,12 @@ The project includes comprehensive performance analysis tools that generate:
 If you use this work in your research, please cite:
 
 ```bibtex
-@misc{diabetes_iris_detection_2024,
+@misc{diabetes_iris_detection_2025,
   title={Diabetes Detection from Iris Images using Deep Learning},
-  author={[Your Name]},
-  year={2024},
+  author={Vignesh Venaktesan},
+  year={2025},
   note={GitHub repository},
-  url={[Repository URL]}
+  url={https://github.com/vignshh7/Iris-Diabetes-Detection}
 }
 ```
 
@@ -435,16 +435,16 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ### Support
 
 For issues and questions:
-- Check existing issues in the repository
-- Create new issue with detailed description
-- Include error logs and system specifications
+- 🐛 [GitHub Issues](https://github.com/vignshh7/Iris-Diabetes-Detection/issues)
+- 📖 [Documentation](https://github.com/vignshh7/Iris-Diabetes-Detection/tree/main/docs)
+- 💬 Contact via GitHub profile
 
 ## 📞 Contact
 
-- **Author**: [Your Name]
-- **Email**: [Your Email]
-- **Institution**: [Your Institution]
-- **Date**: October 2024
+- **Author**: Vignesh Venaktesan
+- **GitHub**: [@vignshh7](https://github.com/vignshh7)
+- **Repository**: [Iris-Diabetes-Detection](https://github.com/vignshh7/Iris-Diabetes-Detection)
+- **Date**: October 2025
 
 ---
 
