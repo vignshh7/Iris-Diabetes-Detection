@@ -11,6 +11,8 @@ gradcam_outputs/
 heatmaps_output/
 results/
 
+docs/
+
 # Temporary Files
 temp/
 __pycache__/
