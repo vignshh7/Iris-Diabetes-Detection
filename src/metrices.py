@@ -10,6 +10,11 @@ from collections import defaultdict
 import re
 from tqdm import tqdm
 import csv
+import sys
+
+# Add project root to path for config import
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import *
 
 # --- 1. Configuration (MUST MATCH THE TRAINING SCRIPT) ---
 def calculate_input_channels(channels_list):
@@ -23,21 +28,19 @@ def calculate_input_channels(channels_list):
     return count
 
 class Config:
-    # --- Paths for prediction and evaluation ---
-    # *** NEW: Configure paths for both classes to enable evaluation ***
-    # *** YOU MUST VERIFY THESE PATHS ARE CORRECT FOR YOUR SYSTEM ***
+    # --- Paths for prediction and evaluation (using centralized config) ---
     TEST_DATA_CONFIG = {
         # The key is the 'ground truth' label
         "Control": {
-            "images": "dataset/control/",
-            "masks": "dataset/pancreas_masks_for_training/control/"
+            "images": CONTROL_DIR,
+            "masks": os.path.join(DATASET_DIR, 'pancreas_masks_for_training', 'control')
         },
         "Diabetic": {
-            "images": "dataset/diabetic/",
-            "masks": "dataset/pancreas_masks_for_training/diabetic/"
+            "images": DIABETIC_DIR,
+            "masks": os.path.join(DATASET_DIR, 'pancreas_masks_for_training', 'diabetic')
         }
     }
-    MODELS_DIR = '.' 
+    MODELS_DIR = MODELS_DIR
     
     # --- Critical settings that MUST match the training config ---
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

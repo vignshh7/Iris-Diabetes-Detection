@@ -10,12 +10,17 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import segmentation_models_pytorch as smp
 from tqdm import tqdm
+import sys
 
+# Add project root to path for config import
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import *
 
 class Config:
-    DATA_DIR = 'dataset'
-    IMAGE_DIR = os.path.join(DATA_DIR, 'imagesformaskstraining')
-    MASK_DIR = os.path.join(DATA_DIR, 'masks')
+    # Use centralized config paths
+    DATA_DIR = DATASET_DIR
+    IMAGE_DIR = IMAGES_FOR_MASKS_TRAINING_DIR
+    MASK_DIR = MASKS_DIR
     
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     
@@ -204,9 +209,10 @@ if __name__ == '__main__':
         
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), 'best_iris_model_3class.pth')
+            model_save_path = os.path.join(MODELS_DIR, 'best_iris_model_3class.pth')
+            torch.save(model.state_dict(), model_save_path)
             print("=> Saved new best model")
 
     print("\nTraining complete!")
     print(f"Best validation loss: {best_val_loss:.4f}")
-    print("Model saved to 'best_iris_model_2class.pth'")
+    print(f"Model saved to '{model_save_path}'")

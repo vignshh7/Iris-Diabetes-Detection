@@ -6,11 +6,17 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import segmentation_models_pytorch as smp
 from tqdm import tqdm
+import sys
+
+# Add project root to path for config import
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import *
 
 class Config:
-    MODEL_PATH = 'best_iris_model_3class.pth'
-    TEST_DIR = 'dataset/control'
-    OUTPUT_DIR = 'test_results_masks/control'
+    # Use centralized config paths
+    MODEL_PATH = os.path.join(MODELS_DIR, 'best_iris_model_3class.pth')
+    TEST_DIR = CONTROL_DIR
+    OUTPUT_DIR = TEST_RESULTS_CONTROL_MASKS
     
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     

@@ -10,8 +10,12 @@ from collections import defaultdict
 import re
 from tqdm import tqdm
 import csv
+import sys
 
-# --- 1. Configuration (MUST MATCH THE TRAINING SCRIPT) ---
+# Add project root to path for config import
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import *
+
 # --- 1. Configuration (MUST MATCH THE TRAINING SCRIPT) ---
 def calculate_input_channels(channels_list):
     """Helper function to calculate total input channels based on a list."""
@@ -24,10 +28,10 @@ def calculate_input_channels(channels_list):
     return count
 
 class Config:
-    # --- Paths for prediction ---
-    TEST_IMAGE_DIR = 'dataset/control/' 
-    TEST_PANCREAS_MASK_DIR = 'dataset/pancreas_masks_for_training/control/'
-    MODELS_DIR = '.' 
+    # --- Paths for prediction (using centralized config) ---
+    TEST_IMAGE_DIR = CONTROL_DIR
+    TEST_PANCREAS_MASK_DIR = os.path.join(DATASET_DIR, 'pancreas_masks_for_training', 'control')
+    MODELS_DIR = MODELS_DIR
     
     # --- Critical settings that MUST match the training config ---
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

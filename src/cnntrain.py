@@ -14,6 +14,11 @@ from collections import defaultdict
 import re
 import numpy as np
 from pkg_resources import parse_version
+import sys
+
+# Add project root to path for config import
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import *
 
 # --- 0. Environment Sanity Check ---
 assert parse_version(A.__version__) >= parse_version("1.0.0"), "Update albumentations"
@@ -41,10 +46,13 @@ def calculate_input_channels(channels_list):
     return count
 
 class Config:
-    DIABETIC_IMAGE_DIR='dataset/diabetic/'; CONTROL_IMAGE_DIR='dataset/control/'
-    DIABETIC_PANCREAS_MASK_DIR='dataset/pancreas_masks_for_training/diabetic/'; CONTROL_PANCREAS_MASK_DIR='dataset/pancreas_masks_for_training/control/'
+    # Use centralized config paths
+    DIABETIC_IMAGE_DIR = DIABETIC_DIR
+    CONTROL_IMAGE_DIR = CONTROL_DIR
+    DIABETIC_PANCREAS_MASK_DIR = os.path.join(DATASET_DIR, 'pancreas_masks_for_training', 'diabetic')
+    CONTROL_PANCREAS_MASK_DIR = os.path.join(DATASET_DIR, 'pancreas_masks_for_training', 'control')
     
-    MODEL_SAVE_PATH = 'best_f1_model_fold_{}.pth' 
+    MODEL_SAVE_PATH = os.path.join(MODELS_DIR, 'best_f1_model_fold_{}.pth')
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     IMG_SIZE=128; BATCH_SIZE=4; LEARNING_RATE=2e-5
     NUM_EPOCHS=75 

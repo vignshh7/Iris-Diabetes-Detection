@@ -2,6 +2,11 @@ import cv2
 import numpy as np
 import os
 import json
+import sys
+
+# Add project root to path for config import
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import *
 
 def create_circular_mask_from_points(image_path, output_path, points):
     """
@@ -43,10 +48,15 @@ def create_circular_mask_from_points(image_path, output_path, points):
     print(f"Saved CIRCULAR mask for {os.path.basename(image_path)} to {output_path}")
     return True
 
-def process_dataset(annotations, input_dir="dataset/control", output_dir="dataset/masks"):
+def process_dataset(annotations, input_dir=None, output_dir=None):
     """
     Processes a list of annotations to generate circular binary masks.
     """
+    if input_dir is None:
+        input_dir = CONTROL_DIR
+    if output_dir is None:
+        output_dir = MASKS_DIR
+    
     os.makedirs(output_dir, exist_ok=True)
     
     total_images = len(annotations)
@@ -211,10 +221,8 @@ annotations = [
     ("117_vapU4fqo", "[\"61R.IMG20250528155553.jpg\"]", [9, 951.202, 1633.196, 472.61, 2470.733, 1483.636, 2291.261])
 ]
 if __name__ == '__main__':
-    # Make sure your original images are in this directory
-    input_directory = "dataset/control"
-    
-    # The script will create this directory and save the masks here
-    output_directory = "dataset/masks" 
+    # Use centralized config paths
+    input_directory = CONTROL_DIR
+    output_directory = MASKS_DIR 
     
     process_dataset(annotations, input_directory, output_directory)
