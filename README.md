@@ -45,15 +45,11 @@ eye_project/
 │   ├── data_manager.py                   # Data splitting and management
 │   └── visualize_results.py              # Result visualization
 │
-├── 📁 results/                           # Output results
-│   ├── cross_validation_results.json     # CV performance metrics
-│   ├── prediction_results.csv            # Model predictions
-│   └── evaluation_results.csv            # Test set evaluation
+├── 📁 test_results_analysis/             # Generated test analysis results
+│   ├── 📁 images/                        # Visualization plots (confusion matrix, ROC curve, etc.)
+│   ├── 📁 metrics/                       # Performance metrics and JSON reports
+│   └── 📁 csv/                           # Test predictions and evaluation results
 │
-├── 📁 performance_analysis/              # Performance analytics
-│   ├── 📁 confusion_matrices/            # Confusion matrix plots
-│   ├── 📁 metrics/                       # Performance metrics
-│   └── 📁 sample_results/                # Sample predictions
 │
 ├── config.py                            # Centralized configuration
 ├── requirements.txt                     # Python dependencies
@@ -135,12 +131,18 @@ eye_project/
   - Cross-validation results visualization
   - Sample prediction analysis
 
-#### `src/visualize_results.py` - Result Visualization
-- **Purpose**: Create visual outputs showing predictions with original images
+#### `src/visualize_results.py` - Comprehensive Test Analysis
+- **Purpose**: Generate complete test analysis with visualizations and metrics
 - **Features**:
-  - Side-by-side original and segmented images
-  - Prediction overlays with confidence scores
-  - Color-preserved visualization with thin borders
+  - Confusion matrix with detailed statistics
+  - ROC curve analysis
+  - Probability distribution plots
+  - Sample prediction visualizations
+  - Comprehensive HTML reports
+- **Output**: Creates timestamped results in `test_results_analysis/` with subfolders:
+  - `images/`: All plots and visualizations
+  - `metrics/`: JSON performance reports
+  - `csv/`: Prediction results and evaluations
 
 ### Configuration Files
 
@@ -189,7 +191,6 @@ All Images → Trained Segmentation Model → Iris Masks
 ├── Load trained segmentation model
 ├── Process all images in dataset directories
 ├── Generate binary iris masks
-└── Save masks to test_results_masks/ directories
 ```
 
 ### Phase 2: Classification Pipeline
