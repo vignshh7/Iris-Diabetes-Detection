@@ -1,17 +1,8 @@
 # Dataset and Data Files
 dataset/
-test_data/
-test_results/
-test_results_masks/
 
-# Generated Results and Analysis
-performance_analysis/
-generated_figures/
-gradcam_outputs/
-heatmaps_output/
-results/
-
-docs/
+# Analysis Results (Generated during runtime)
+test_results_analysis/
 
 # Temporary Files
 temp/
@@ -57,9 +48,6 @@ desktop.ini
 
 # CSV Result Files (Generated during runtime)
 *.csv
-evaluation_results.csv
-prediction_results.csv
-cross_validation_chart.json
 
 # Jupyter Notebook Checkpoints
 .ipynb_checkpoints/

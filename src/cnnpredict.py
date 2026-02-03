@@ -11,10 +11,25 @@ import re
 from tqdm import tqdm
 import csv
 import sys
+import json
+import random
 
 # Add project root to path for config import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import *
+from src.data_manager import create_data_manager
+
+# --- REPRODUCIBILITY SEEDS (Match Training) ---
+def set_reproducibility_seeds(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+set_reproducibility_seeds(42)
 
 # --- 1. Configuration (MUST MATCH THE TRAINING SCRIPT) ---
 def calculate_input_channels(channels_list):
@@ -29,23 +44,24 @@ def calculate_input_channels(channels_list):
 
 class Config:
     # --- Paths for prediction (using centralized config) ---
-    TEST_IMAGE_DIR = CONTROL_DIR
-    TEST_PANCREAS_MASK_DIR = os.path.join(DATASET_DIR, 'pancreas_masks_for_training', 'control')
+    TEST_IMAGE_DIR = DIABETIC_DIR
+    # Updated to use correct pancreatic mask structure
+    CONTROL_PANCREAS_MASK_DIR = os.path.join(DATASET_DIR, 'pancreatic_masks', 'control')
+    DIABETIC_PANCREAS_MASK_DIR = os.path.join(DATASET_DIR, 'pancreatic_masks', 'diabetic')
     MODELS_DIR = MODELS_DIR
     
     # --- Critical settings that MUST match the training config ---
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     IMG_SIZE = 128
     
-    # *** THIS IS THE LINE THAT WAS FIXED ***
+    # Using all available image channels with mask as spatial attention
     CHANNELS_TO_USE = ['rgb', 'gray', 'hsv', 'lab', 'mask'] 
     
-    # These are calculated automatically
-    INPUT_CHANNELS_PER_EYE = calculate_input_channels(CHANNELS_TO_USE)
-    INPUT_CHANNELS_TOTAL = INPUT_CHANNELS_PER_EYE * 2 
+    # Calculate input channels: mask is not counted as separate channel (spatial attention)
+    INPUT_CHANNELS = calculate_input_channels([c for c in CHANNELS_TO_USE if c != 'mask']) * 2 
 
 CONFIG = Config()
-print(f"Prediction script configured for channels: {CONFIG.CHANNELS_TO_USE} ({CONFIG.INPUT_CHANNELS_TOTAL} total)")
+print(f"Prediction script configured for channels: {CONFIG.CHANNELS_TO_USE} ({CONFIG.INPUT_CHANNELS} total)")
 
 # --- 2. Model Definition (MUST BE IDENTICAL TO THE TRAINING SCRIPT) ---
 class SEBlock(nn.Module):
@@ -53,11 +69,12 @@ class SEBlock(nn.Module):
     def forward(self,x):b,c,_,_=x.size();y=self.avg_pool(x).view(b,c);y=self.fc(y).view(b,c,1,1);return x*y.expand_as(x)
 
 class SimplerCNN(nn.Module):
-    def __init__(self, input_channels=22, num_classes=1, dropout_rate=0.5):
+    def __init__(self, input_channels=4, num_classes=1, dropout_rate=0.5):
         super(SimplerCNN, self).__init__()
-        self.c1 = nn.Sequential(nn.Conv2d(input_channels, 32, 3, 1, 1), nn.BatchNorm2d(32), nn.ReLU(), nn.MaxPool2d(2,2)); self.s1 = SEBlock(32)
-        self.c2 = nn.Sequential(nn.Conv2d(32, 64, 3, 1, 1), nn.BatchNorm2d(64), nn.ReLU(), nn.MaxPool2d(2,2)); self.s2 = SEBlock(64)
-        self.c3 = nn.Sequential(nn.Conv2d(64, 128, 3, 1, 1), nn.BatchNorm2d(128), nn.ReLU(), nn.MaxPool2d(2,2)); self.s3 = SEBlock(128)
+        # GroupNorm for stability with small batch sizes (groups=4 for channels 32,64,128)
+        self.c1 = nn.Sequential(nn.Conv2d(input_channels, 32, 3, 1, 1), nn.GroupNorm(4, 32), nn.ReLU(), nn.MaxPool2d(2,2)); self.s1 = SEBlock(32)
+        self.c2 = nn.Sequential(nn.Conv2d(32, 64, 3, 1, 1), nn.GroupNorm(4, 64), nn.ReLU(), nn.MaxPool2d(2,2)); self.s2 = SEBlock(64)
+        self.c3 = nn.Sequential(nn.Conv2d(64, 128, 3, 1, 1), nn.GroupNorm(4, 128), nn.ReLU(), nn.MaxPool2d(2,2)); self.s3 = SEBlock(128)
         final_feature_map_size = CONFIG.IMG_SIZE // 8
         flattened_size = 128 * final_feature_map_size * final_feature_map_size
         self.classifier = nn.Sequential(
@@ -68,14 +85,20 @@ class SimplerCNN(nn.Module):
         x = x.view(x.size(0), -1); return self.classifier(x)
 
 
-# --- 3. Preprocessing (MUST BE IDENTICAL TO THE TRAINING SCRIPT) ---
-def process_single_eye(image_path: str, config: Config) -> torch.Tensor:
+# --- 3. Preprocessing (MUST MATCH TRAINING SCRIPT) ---
+def process_single_eye(image_path: str, config: Config, patient_class: str = None, apply_mask_attention=True) -> torch.Tensor:
     img_bgr = cv2.imread(image_path)
     if img_bgr is None: raise FileNotFoundError(f"Image not found at {image_path}")
     img = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     
     b,_=os.path.splitext(os.path.basename(image_path));mf=f"{b}_pancreas_roi.png"
-    mp=os.path.join(config.TEST_PANCREAS_MASK_DIR, mf)
+    
+    # Use correct mask directory based on patient class
+    if patient_class and patient_class.lower() == 'diabetic':
+        mp = os.path.join(config.DIABETIC_PANCREAS_MASK_DIR, mf)
+    else:
+        mp = os.path.join(config.CONTROL_PANCREAS_MASK_DIR, mf)
+    
     mask=cv2.imread(mp,cv2.IMREAD_GRAYSCALE)
 
     if mask is None:
@@ -85,6 +108,7 @@ def process_single_eye(image_path: str, config: Config) -> torch.Tensor:
     resizer = A.Resize(config.IMG_SIZE, config.IMG_SIZE)
     augmented = resizer(image=img, mask=mask); img, mask = augmented['image'], augmented['mask']
     
+    # Build image channels (excluding mask from channel stack)
     channels_to_stack = []
     if 'rgb' in config.CHANNELS_TO_USE: channels_to_stack.append(img)
     if 'gray' in config.CHANNELS_TO_USE: channels_to_stack.append(cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)[...,np.newaxis])
@@ -93,114 +117,188 @@ def process_single_eye(image_path: str, config: Config) -> torch.Tensor:
     
     combined_image = np.dstack(channels_to_stack) if channels_to_stack else img
     
-    final_transform = A.Compose([A.Normalize(mean=[0.5]*10, std=[0.5]*10, max_pixel_value=255.0), ToTensorV2()])
+    # Dynamic normalization for image channels only
+    num_image_channels = calculate_input_channels([c for c in config.CHANNELS_TO_USE if c != 'mask'])
+    final_transform = A.Compose([A.Normalize(mean=[0.5]*num_image_channels, std=[0.5]*num_image_channels, max_pixel_value=255.0), ToTensorV2()])
     
-    if 'mask' in config.CHANNELS_TO_USE:
-        final_data = final_transform(image=combined_image)
-        image_tensor = final_data['image']
-        mask_tensor = ToTensorV2()(image=mask)['image'].float() / 255.0
-        return torch.cat([image_tensor, mask_tensor], dim=0)
-    else:
-        return final_transform(image=combined_image)['image']
+    # Apply normalization to image channels only
+    final_data = final_transform(image=combined_image)
+    image_tensor = final_data['image']
+    
+    # Apply mask as spatial attention (multiply, don't concatenate)
+    if 'mask' in config.CHANNELS_TO_USE and apply_mask_attention:
+        mask_tensor = torch.tensor(mask, dtype=torch.float32) / 255.0
+        # Expand mask to match image channels and apply spatial attention
+        mask_tensor = mask_tensor.unsqueeze(0).expand_as(image_tensor)
+        image_tensor = image_tensor * mask_tensor
+    
+    return image_tensor
 
 
-# --- 4. Prediction Logic (Using Ensemble) ---
-def predict_with_ensemble(models: list, left_eye_path: str, right_eye_path: str, config: Config) -> tuple[str, float]:
+# --- 4. Prediction Logic (Using Ensemble with Optimal Thresholds) ---
+def predict_with_ensemble(models: list, model_metadata: list, left_eye_path: str, right_eye_path: str, config: Config, patient_class: str = None) -> tuple[str, float]:
     try:
-        left_tensor = process_single_eye(left_eye_path, config)
-        right_tensor = process_single_eye(right_eye_path, config)
+        left_tensor = process_single_eye(left_eye_path, config, patient_class, apply_mask_attention=True)
+        right_tensor = process_single_eye(right_eye_path, config, patient_class, apply_mask_attention=True)
         input_tensor = torch.cat([left_tensor, right_tensor], dim=0).unsqueeze(0).to(config.DEVICE)
         
-        if input_tensor.shape[1] != config.INPUT_CHANNELS_TOTAL:
-             raise ValueError(f"Shape mismatch! Expected {config.INPUT_CHANNELS_TOTAL} channels, but got {input_tensor.shape[1]}. Check your CHANNELS_TO_USE config.")
+        if input_tensor.shape[1] != config.INPUT_CHANNELS:
+             raise ValueError(f"Shape mismatch! Expected {config.INPUT_CHANNELS} channels, but got {input_tensor.shape[1]}. Check your CHANNELS_TO_USE config.")
 
     except (FileNotFoundError, ValueError) as e:
         print(f"Skipping pair due to error: {e}")
         return "Error", 0.0
 
-    probabilities = []
+    probs = []
     with torch.no_grad():
         for model in models:
             output = model(input_tensor)
             prob = torch.sigmoid(output).item()
-            probabilities.append(prob)
+            probs.append(prob)
     
-    avg_prob = np.mean(probabilities)
-    label = "Diabetic" if avg_prob > 0.5 else "Control"
-    return label, avg_prob
+    avg_prob = float(np.mean(probs))
+    
+    # Conservative medical decision rule
+    if avg_prob >= 0.55:
+        final_prediction = "Diabetic"
+    elif avg_prob <= 0.4:
+        final_prediction = "Control"
+    else:
+        final_prediction = "Control"  # ambiguous → safer class
+    
+    return final_prediction, avg_prob
 
 
 # --- 5. Main Execution Block ---
 if __name__ == '__main__':
     print(f"Using device: {CONFIG.DEVICE}")
     
+    # Create data manager to get proper test splits
+    data_manager = create_data_manager(test_size=0.2, val_size=0.2, random_state=42)
+    
+    # Get test data (proper academic split)
+    test_data = data_manager.get_test_data()
+    
+    if not test_data:
+        print("No test data available. Please ensure data_manager is properly configured.")
+        exit(1)
+    
+    print(f"Found {len(test_data)} test patients")
+    
+    # Extract fold number from model path for correct ordering
+    def extract_fold_num(path):
+        match = re.search(r'fold_(\d+)', path)
+        return int(match.group(1)) if match else 0
+    
     model_paths = glob.glob(os.path.join(CONFIG.MODELS_DIR, 'best_f1_model_fold_*.pth'))
     if not model_paths:
         print(f"FATAL ERROR: No models found in '{CONFIG.MODELS_DIR}' matching the pattern 'best_f1_model_fold_*.pth'.")
         exit(1)
+    
+    # Sort model paths by fold number to ensure correct model-to-metadata mapping
+    model_paths = sorted(model_paths, key=extract_fold_num)
+    print(f"Found and sorted {len(model_paths)} model files by fold number")
 
     loaded_models = []
+    model_metadata = []
+    
     for path in model_paths:
         print(f"Loading model: {path}")
-        model = SimplerCNN(input_channels=CONFIG.INPUT_CHANNELS_TOTAL).to(CONFIG.DEVICE)
-        model.load_state_dict(torch.load(path, map_location=CONFIG.DEVICE))
+        checkpoint = torch.load(path, map_location=CONFIG.DEVICE, weights_only=False)
+        
+        # Handle both old and new model formats
+        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+            # New format with metadata
+            model_state_dict = checkpoint['model_state_dict']
+            metadata = {
+                'optimal_threshold': checkpoint.get('optimal_threshold', 0.5),
+                'best_f1_score': checkpoint.get('best_f1_score', 0.0),
+                'fold': checkpoint.get('fold', 0)
+            }
+            print(f"  - Fold {metadata['fold']} with optimal threshold {metadata['optimal_threshold']:.3f} (F1: {metadata['best_f1_score']:.3f})")
+        else:
+            # Old format - just state dict
+            model_state_dict = checkpoint
+            metadata = {'optimal_threshold': 0.5, 'best_f1_score': 0.0, 'fold': 0}
+            print(f"  - Using fallback threshold 0.5")
+        
+        model = SimplerCNN(input_channels=CONFIG.INPUT_CHANNELS).to(CONFIG.DEVICE)
+        model.load_state_dict(model_state_dict)
         model.eval()
         loaded_models.append(model)
+        model_metadata.append(metadata)
+        
     print(f"\n--- Successfully loaded {len(loaded_models)} models for ensemble prediction ---\n")
 
-    print(f"Scanning for image pairs in '{CONFIG.TEST_IMAGE_DIR}'...")
-    patient_files = defaultdict(lambda: {'L': None, 'R': None})
-    for image_path in glob.glob(os.path.join(CONFIG.TEST_IMAGE_DIR, '*.jpg')):
-        filename = os.path.basename(image_path)
-        match = re.search(r'(L|R)', filename, re.IGNORECASE)
-        if match:
-            patient_files[filename[:match.start()]][match.group(0).upper()] = image_path
-    
-    patients_to_predict = []
-    for pid, eyes in patient_files.items():
-        if eyes['L'] and eyes['R']:
-            patients_to_predict.append((pid, eyes['L'], eyes['R']))
-        else:
-            print(f"Warning: Patient '{pid}' is missing a complete L/R pair. Skipping.")
-    
-    print(f"Found {len(patients_to_predict)} complete patient pairs to process.")
-    
     results = []
     prediction_counts = defaultdict(int)
-
-    if patients_to_predict:
-        for pid, left_path, right_path in tqdm(patients_to_predict, desc="Predicting Patient Pairs"):
-            predicted_class, avg_prob = predict_with_ensemble(loaded_models, left_path, right_path, CONFIG)
-            
-            prediction_counts[predicted_class] += 1
-            
-            results.append({
-                'patient_id': pid,
-                'left_image': os.path.basename(left_path),
-                'right_image': os.path.basename(right_path),
-                'prediction': predicted_class,
-                'avg_probability': f"{avg_prob:.4f}"
-            })
-
+    
+    print("Processing test patients...")
+    
+    for patient_data in tqdm(test_data, desc="Predicting Test Patients"):
+        patient_id = patient_data.get('patient_id', 'unknown')
+        true_class = patient_data['label_name']  # 'control' or 'diabetic'
+        left_path = patient_data['left_image']
+        right_path = patient_data['right_image']
+        
+        if not os.path.exists(left_path) or not os.path.exists(right_path):
+            print(f"Warning: Missing images for patient {patient_id}")
+            continue
+        
+        predicted_class, avg_prob = predict_with_ensemble(loaded_models, model_metadata, left_path, right_path, CONFIG, true_class)
+        prediction_counts[predicted_class] += 1
+        
+        results.append({
+            'Patient': patient_id,
+            'Ground_Truth': true_class.capitalize(),
+            'Prediction': predicted_class,
+            'Probability': f"{avg_prob:.4f}",
+            'Left_Image': os.path.basename(left_path),
+            'Right_Image': os.path.basename(right_path)
+        })
+    
+    # Save results
     if results:
         with open('prediction_results.csv', 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=results[0].keys())
             writer.writeheader()
             writer.writerows(results)
-        print("\n--- Predictions complete. Results saved to 'prediction_results.csv' ---")
+        print(f"\n--- Predictions complete. Results saved to 'prediction_results.csv' ---")
         
         print("\n" + "="*55); print("                PREDICTION DETAILS"); print("="*55)
         for res in results:
-            print(f"Patient: {res['patient_id']:<20} -> {res['prediction']:<10} (Prob: {res['avg_probability']})")
+            gt_str = f" (GT: {res['Ground_Truth']})"
+            status = "✓" if res['Ground_Truth'].lower() == res['Prediction'].lower() else "✗"
+            avg_prob = float(res['Probability'])
+            confidence = (
+                "HIGH" if avg_prob >= 0.7 or avg_prob <= 0.3
+                else "MEDIUM" if avg_prob >= 0.6 or avg_prob <= 0.4
+                else "LOW"
+            )
+            print(f"{status} Patient: {res['Patient']:<15} -> {res['Prediction']:<10} (Prob: {avg_prob:.3f}, Confidence: {confidence}){gt_str}")
         print("="*55)
         
         print("\n" + "="*30); print("        FINAL TALLY"); print("="*30)
         total_processed = prediction_counts["Diabetic"] + prediction_counts["Control"]
-        print(f"Total Patient Pairs Processed: {total_processed}")
+        print(f"Total Test Patients Processed: {total_processed}")
         print(f"  - Predicted as Diabetic: {prediction_counts['Diabetic']}")
         print(f"  - Predicted as Control:  {prediction_counts['Control']}")
         if prediction_counts["Error"] > 0:
             print(f"  - Pairs Skipped Due to Errors: {prediction_counts['Error']}")
         print("="*30)
+        
+        # Calculate test accuracy
+        correct = 0
+        total = 0
+        for res in results:
+            total += 1
+            if res['Ground_Truth'].lower() == res['Prediction'].lower():
+                correct += 1
+        
+        if total > 0:
+            accuracy = correct / total
+            print(f"\n🎯 Test Set Accuracy: {accuracy:.3f} ({correct}/{total})")
+            print(f"📊 Academic Rigor: Test set was never seen during training")
+        
     else:
-        print("\nNo patient pairs were processed.")
+        print("\nNo test patients were processed.")

@@ -1,606 +1,309 @@
-# 👁️ Diabetes Detection from Iris Images
+# Diabetes Detection from Iris Images
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org)
-[![OpenCV](https://img.shields.io/badge/OpenCV-4.8+-green.svg)](https://opencv.org)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## Project Overview
+This system detects diabetes through non-invasive iris image analysis using computer vision and deep learning. The project employs a two-stage approach: iris segmentation followed by pancreatic region classification to identify diabetic patterns in eye images.
 
-> **Advanced Computer Vision System for Non-Invasive Diabetes Detection through Iris Analysis**
-
-**Authors**: Vignesh Venkatesan, Dr. Agarwal  
-**Institution**: Research Project  
-**Year**: 2025
-
-## Overview
-
-This project implements a comprehensive deep learning system for detecting diabetes mellitus from iris images using advanced computer vision techniques. The system employs a two-phase approach combining iris segmentation and diabetic pattern classification to achieve robust and accurate diabetes detection.
-
-## 📋 Table of Contents
-
-- [Project Architecture](#project-architecture)
-- [Key Features](#key-features)
-- [Dataset](#dataset)
-- [Implementation Phases](#implementation-phases)
-- [Model Architecture](#model-architecture)
-- [Project Structure](#project-structure)
-- [Installation & Setup](#installation--setup)
-- [Usage Instructions](#usage-instructions)
-- [Performance Analysis](#performance-analysis)
-- [Visualization Tools](#visualization-tools)
-- [Results](#results)
-- [Technical Specifications](#technical-specifications)
-- [License](#license)
-- [Contributing](#contributing)
-
-## 🏗️ Project Architecture
-
-### Two-Phase Approach
-
-**Phase 1: Iris Segmentation Model**
-- **Objective**: Precise segmentation of iris regions from eye images
-- **Model**: U-Net with MobileNetV2 encoder
-- **Input**: RGB eye images (256×256)
-- **Output**: Binary masks highlighting iris regions
-- **Training**: Manual binary masks with data augmentation
-
-**Phase 2: Diabetic Pattern Classification**
-- **Objective**: Classify diabetic vs. control subjects based on pancreatic region patterns
-- **Model**: Custom CNN with Squeeze-and-Excitation blocks
-- **Input**: Multi-channel feature representations (RGB, Grayscale, HSV, LAB, Mask)
-- **Output**: Binary classification (Diabetic/Control)
-- **Training**: 5-fold cross-validation with ensemble learning
-
-## 🌟 Key Features
-
-### Advanced Capabilities
-- **Centralized Configuration**: All paths and settings managed through `config.py`
-- **Real-time Predictions**: Ensemble model integration for accurate diabetes detection
-- **Comprehensive Visualizations**: Complete image pair analysis with segmentation overlays
-- **Professional Structure**: Git-ready repository with proper documentation
-- **Performance Analytics**: Detailed confusion matrices, ROC curves, and metric analysis
-- **Unknown Dataset Support**: Specialized tools for analyzing unlabeled datasets
-- **Color Preservation**: Advanced image processing maintaining original eye colors
-- **Ultra-thin Borders**: 1-pixel precision segmentation overlays
-
-### Recent Enhancements (2025)
-- **Standardized Paths**: Complete migration to centralized configuration system
-- **Real Prediction Integration**: Replaced static values with actual model inference
-- **Professional Documentation**: Comprehensive README with proper authorship
-- **Production-Ready Code**: Clean repository structure with .gitignore optimization
-- **Visualization Suite**: Tools for both labeled and unknown dataset analysis
-
-## 📊 Dataset
-
-### Image Specifications
-- **Format**: JPEG images
-- **Resolution**: Variable (resized to 256×256 for segmentation, 128×128 for classification)
-- **Channels**: RGB
-- **Eye Types**: Left and Right eye pairs
-- **Classes**: Control and Diabetic subjects
-
-### Dataset Composition
-- **Training Images**: Located in `dataset/` directory
-- **Control Subjects**: `dataset/control/`
-- **Diabetic Subjects**: `dataset/diabetic/`
-- **Test Images**: `dataset/testing/` and `dataset/testing1/`
-- **Manual Masks**: `dataset/masks/` (for iris segmentation training)
-
-### Annotations
-- **Format**: CSV file with VGG Image Annotator format
-- **File**: `annotations.csv`
-- **Content**: Spatial coordinates for iris regions
-- **Total Annotations**: 117 annotated images
-
-## 🔄 Implementation Phases
-
-### Phase 1: Iris Segmentation
-
-#### Step 1: Model Training (`maskstrain.py`)
-```python
-# Key Features:
-- U-Net architecture with MobileNetV2 encoder
-- Dice loss for binary segmentation
-- Data augmentation (rotation, flip, brightness/contrast)
-- Train/validation split: 85%/15%
-- Model saved as: best_iris_model_3class.pth
-```
-
-#### Step 2: Mask Generation (`maskspredict.py`)
-```python
-# Inference Process:
-- Load trained segmentation model
-- Process control and diabetic image directories
-- Generate binary masks for iris regions
-- Save masks in test_results_masks/
-```
-
-### Phase 2: ROI Extraction and Classification
-
-#### Step 3: Pancreatic Mask Generation (`pancreaticmasks.py`)
-```python
-# ROI Extraction:
-- Use iris masks to identify iris center and radius
-- Generate pancreatic region masks (annular region)
-- Inner radius: 40% of iris radius
-- Outer radius: 85% of iris radius
-- Account for left/right eye differences
-```
-
-#### Step 4: Classification Training (`cnntrain.py`)
-```python
-# Training Features:
-- 5-fold stratified cross-validation
-- Multi-channel input (RGB + Gray + HSV + LAB + Mask)
-- Custom CNN with SE blocks
-- Focal loss for class imbalance
-- Ensemble of 5 models (one per fold)
-```
-
-#### Step 5: Prediction (`cnnpredict.py`)
-```python
-# Prediction Process:
-- Load ensemble of trained models
-- Process left-right eye pairs
-- Multi-channel feature extraction
-- Ensemble averaging for final prediction
-```
-
-## 🧠 Model Architecture
-
-### Iris Segmentation Model (U-Net)
-```
-Encoder: MobileNetV2 (ImageNet pretrained)
-├── Decoder: Upsampling blocks
-├── Skip connections for feature preservation
-├── Output: 1 channel (binary mask)
-└── Loss: Dice Loss
-```
-
-### Classification Model (Custom CNN)
-```
-Input: Multi-channel features (22 channels total)
-├── Conv Block 1: 32 filters + SE Block + MaxPool
-├── Conv Block 2: 64 filters + SE Block + MaxPool  
-├── Conv Block 3: 128 filters + SE Block + MaxPool
-├── Global Average Pooling
-├── FC Layer: 256 neurons + Dropout
-└── Output: 1 neuron (binary classification)
-```
-
-### Squeeze-and-Excitation (SE) Block
-```
-Input Features → Global Average Pooling
-├── FC1: Reduction (r=4)
-├── ReLU
-├── FC2: Expansion
-├── Sigmoid
-└── Channel-wise multiplication with input
-```
-
-## 📁 Project Structure
+## 📁 Dataset Structure
 
 ```
 eye_project/
-├── 📁 dataset/
-│   ├── 📁 allimages/            # Combined image collection
-│   ├── 📁 allimagesmasks/       # All generated masks
-│   ├── 📁 control/              # Control subject images
-│   ├── 📁 diabetic/             # Diabetic subject images
-│   ├── 📁 testing/              # Test images set 1
-│   ├── 📁 testing1/             # Test images set 2
-│   ├── 📁 masks/                # Manual masks for training
-│   ├── 📁 imagesformaskstraining/ # Images for mask training
-│   ├── 📁 pancreas_masks_for_training/
-│   │   ├── 📁 control/          # Pancreatic masks for control
-│   │   └── 📁 diabetic/         # Pancreatic masks for diabetic
-│   └── 📁 pancreas_masks_for_testing/
-│       ├── 📁 testing/          # Test pancreatic masks
-│       └── 📁 testing1/         # Test pancreatic masks
+├── 📁 dataset/                           # Main dataset directory
+│   ├── 📁 data/                          # Raw image data
+│   │   ├── 📁 control/                   # Control (healthy) subject images
+│   │   │   ├── patient_1_left.jpg
+│   │   │   ├── patient_1_right.jpg
+│   │   │   └── ... (52 patients × 2 eyes)
+│   │   └── 📁 diabetic/                  # Diabetic subject images
+│   │       ├── patient_53_left.jpg
+│   │       ├── patient_53_right.jpg
+│   │       └── ... (76 patients × 2 eyes)
+│   │
+│   ├── 📁 masks/                         # Manual annotations for training
+│   │   ├── 📁 control/                   # Control iris masks
+│   │   └── 📁 diabetic/                  # Diabetic iris masks
+│   │
+│   └── 📁 pancreatic_masks/              # Generated ROI masks
+│       ├── 📁 control/                   # Control pancreatic region masks
+│       └── 📁 diabetic/                  # Diabetic pancreatic region masks
 │
-├── 📁 src/                      # Source code directory
-│   ├── � config.py             # 🆕 Centralized configuration
-│   ├── � all_pairs_visualizer.py  # 🆕 Complete visualization tool
-│   ├── � unknown_pairs_visualizer.py  # 🆕 Unknown dataset analyzer
-│   └── � path_standardization_summary.md  # 🆕 Documentation
+├── 📁 models/                            # Trained model checkpoints
+│   ├── best_iris_model_3class.pth        # Iris segmentation model
+│   ├── best_f1_model_fold_1.pth          # Classification model fold 1
+│   ├── best_f1_model_fold_2.pth          # Classification model fold 2
+│   ├── best_f1_model_fold_3.pth          # Classification model fold 3
+│   ├── best_f1_model_fold_4.pth          # Classification model fold 4
+│   └── best_f1_model_fold_5.pth          # Classification model fold 5
 │
-├── 📁 performance_analysis/     # 🆕 Enhanced performance evaluation
-│   ├── 📁 confusion_matrices/   # Confusion matrix visualizations
-│   ├── 📁 sample_results/       # Sample prediction results (10 pairs)
-│   ├── 📁 comprehensive_results/ # 🆕 All 131 image pairs analysis
-│   └── 📁 metrics/              # Performance metrics and plots
+├── 📁 src/                               # Source code directory
+│   ├── cnntrain.py                       # Classification training script
+│   ├── cnnpredict.py                     # Classification prediction script
+│   ├── maskstrain.py                     # Iris segmentation training
+│   ├── maskspredict.py                   # Iris mask generation
+│   ├── generate_masks.py                 # Pancreatic mask generation
+│   ├── metrices.py                       # Model evaluation
+│   ├── evaluate.py                       # Performance analysis
+│   ├── data_manager.py                   # Data splitting and management
+│   └── visualize_results.py              # Result visualization
 │
-├── 📁 test_results_masks/       # Generated iris masks
-│   ├── 📁 control/
-│   ├── 📁 diabetic/
-│   ├── 📁 testing/
-│   └── 📁 testing1/
+├── 📁 results/                           # Output results
+│   ├── cross_validation_results.json     # CV performance metrics
+│   ├── prediction_results.csv            # Model predictions
+│   └── evaluation_results.csv            # Test set evaluation
 │
-├── 📁 generated_figures/        # Generated visualizations
-├── 📁 gradcam_outputs/          # Grad-CAM heatmaps
-├── 📁 heatmaps_output/          # Additional heatmaps
-├── 📁 test_data/                # Test data
-└── 📁 test_results/             # Test results (updated structure)
-    ├── 📁 control/
-    └── 📁 diabetic/
-
-# Core Python Scripts (Updated with centralized config)
-├── 🐍 maskstrain.py             # Phase 1: Iris segmentation training
-├── 🐍 maskspredict.py           # Phase 1: Iris mask generation
-├── 🐍 masksgenerate.py          # Mask generation utilities
-├── 🐍 pancreaticmasks.py        # Phase 2: Pancreatic ROI extraction
-├── 🐍 cnntrain.py               # Phase 2: Classification training
-├── 🐍 cnnpredict.py             # Phase 2: Diabetic classification
-├── 🐍 metrices.py               # Model evaluation metrics
-├── 🐍 evaluate.py               # Model evaluation script
-├── 🐍 images.py                 # Visualization generation
-├── 🐍 rgbtograycrop.py          # Image preprocessing utilities
-├── 🐍 test.py                   # Testing utilities
-
-# Model Files
-├── 🏷️ best_iris_model_2class.pth      # 2-class iris segmentation model
-├── 🏷️ best_iris_model_3class.pth      # 3-class iris segmentation model
-├── 🏷️ best_f1_model_fold_1.pth        # Classification model fold 1
-├── 🏷️ best_f1_model_fold_2.pth        # Classification model fold 2
-├── 🏷️ best_f1_model_fold_3.pth        # Classification model fold 3
-├── 🏷️ best_f1_model_fold_4.pth        # Classification model fold 4
-└── 🏷️ best_f1_model_fold_5.pth        # Classification model fold 5
-
-# Data Files
-├── 📄 annotations.csv           # Image annotations
-├── 📄 evaluation_results.csv    # Model evaluation results
-├── 📄 prediction_results.csv    # Prediction results
-├── 📄 cross_validation_chart.json  # Cross-validation results
-├── 📄 requirements.txt          # Python dependencies
-├── 📄 .gitignore               # 🆕 Git ignore configuration
-└── 📄 README.md                 # This documentation
+├── 📁 performance_analysis/              # Performance analytics
+│   ├── 📁 confusion_matrices/            # Confusion matrix plots
+│   ├── 📁 metrics/                       # Performance metrics
+│   └── 📁 sample_results/                # Sample predictions
+│
+├── config.py                            # Centralized configuration
+├── requirements.txt                     # Python dependencies
+├── data_split_info.json                # Train/val/test splits
+└── README.md                           # This documentation
 ```
 
-### 🆕 New Features Added
+### Dataset Characteristics
+- **Total Patients**: 128 (52 control, 76 diabetic)
+- **Images per Patient**: 2 (left eye, right eye)
+- **Image Format**: JPEG
+- **Resolution**: Variable (auto-resized to 128×128 for training)
+- **Channels**: RGB color images
+- **Annotations**: Manual iris segmentation masks for training
 
-#### Centralized Configuration System
-- **`src/config.py`**: Single source of truth for all paths and settings
-- **Standardized Paths**: All scripts now use centralized configuration
-- **Easy Maintenance**: No more hardcoded paths scattered across files
-- **Professional Structure**: Industry-standard configuration management
+## 🗂️ File Usage and Purpose
 
-#### Advanced Visualization Tools
-- **`src/all_pairs_visualizer.py`**: Generates comprehensive visualizations for ALL 131 image pairs
-- **`src/unknown_pairs_visualizer.py`**: Specialized tool for analyzing unknown/unlabeled datasets
-- **Real Predictions**: Integrated actual model inference replacing static values
-- **Color Preservation**: Advanced image processing maintaining original eye colors
-- **Ultra-thin Borders**: 1-pixel precision segmentation overlays
+### Core Training Files
 
-## 🛠️ Installation & Setup
+#### `src/cnntrain.py` - Classification Model Training
+- **Purpose**: Train diabetic classification models using 5-fold cross-validation
+- **Input**: Multi-channel eye images (RGB + Gray + HSV + LAB + spatial mask attention)
+- **Architecture**: Custom CNN with Squeeze-and-Excitation blocks and GroupNorm
+- **Output**: 5 trained model checkpoints (one per fold)
+- **Key Features**:
+  - Early stopping with patience=8
+  - Optimal threshold finding per fold
+  - Spatial attention masking
+  - Reproducible training with fixed seeds
 
-### Prerequisites
-- Python 3.8+
-- CUDA-capable GPU (recommended)
-- Minimum 8GB RAM
-- 10GB storage space
+#### `src/cnnpredict.py` - Classification Prediction
+- **Purpose**: Generate predictions on test data using ensemble of trained models
+- **Input**: Eye image pairs from test set
+- **Process**: Load 5-fold models, ensemble predictions, apply optimal thresholds
+- **Output**: CSV file with patient predictions and probabilities
 
-### Step 1: Clone Repository
-```bash
-git clone https://github.com/vignshh7/Iris-Diabetes-Detection.git
-cd Iris-Diabetes-Detection
-```
+#### `src/maskstrain.py` - Iris Segmentation Training
+- **Purpose**: Train U-Net model for iris segmentation
+- **Architecture**: U-Net with MobileNetV2 encoder
+- **Input**: Eye images with manual iris annotations
+- **Output**: Trained segmentation model (`best_iris_model_3class.pth`)
 
-### Step 2: Create Virtual Environment
-```bash
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# Linux/Mac
-source .venv/bin/activate
-```
+#### `src/maskspredict.py` - Iris Mask Generation
+- **Purpose**: Generate iris segmentation masks for all images
+- **Input**: Raw eye images from control/diabetic directories
+- **Process**: Apply trained segmentation model
+- **Output**: Binary iris masks saved to appropriate directories
 
-### Step 3: Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+### Data Management Files
 
-### Dependencies
-```
-torch>=2.0.0
-torchvision>=0.15.0
-opencv-python>=4.8.0
-albumentations>=1.3.0
-segmentation-models-pytorch>=0.3.3
-scikit-learn>=1.3.0
-numpy>=1.24.0
-pandas>=2.0.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
-tqdm>=4.65.0
-torchmetrics>=1.0.0
-grad-cam>=1.4.8
-```
-
-## 🚀 Usage Instructions
-
-### Option 1: Complete Pipeline (Recommended)
-If you want to run the entire pipeline from scratch:
-
-#### Phase 1: Iris Segmentation
-```bash
-# Step 1: Train iris segmentation model
-python maskstrain.py
-
-# Step 2: Generate iris masks for all images
-python maskspredict.py
-```
-
-#### Phase 2: Classification
-```bash
-# Step 3: Generate pancreatic region masks
-python pancreaticmasks.py
-
-# Step 4: Train classification model
-python cnntrain.py
-
-# Step 5: Run predictions
-python cnnpredict.py
-```
-
-### Option 2: Using Pre-trained Models (Quick Start)
-If you want to use the existing trained models:
-
-```bash
-# Generate predictions using pre-trained models
-python cnnpredict.py
-
-# Or run evaluation
-python metrices.py
-```
-
-### Option 3: Performance Analysis & Visualization
-```bash
-# Generate comprehensive performance analysis
-python performance_analysis_generator.py
-
-# Generate visualizations for ALL image pairs (131 pairs)
-python src/all_pairs_visualizer.py
-
-# Analyze unknown/unlabeled datasets
-python src/unknown_pairs_visualizer.py
-```
-
-## 🎨 Visualization Tools
-
-### Comprehensive Image Pair Analysis
-
-#### All Pairs Visualizer (`src/all_pairs_visualizer.py`)
-- **Purpose**: Generate visualizations for ALL 131 image pairs in the dataset
+#### `src/data_manager.py` - Data Splitting and Management
+- **Purpose**: Handle train/validation/test splits with no data leakage
 - **Features**:
-  - Real-time model predictions using ensemble approach
-  - Original image → Segmented mask → Overlaid result → Prediction panel
-  - Color preservation with advanced image processing
-  - Ultra-thin (1px) segmentation borders
-  - Patient information with ground truth and predictions
-  - Probability scores and confidence levels
+  - Stratified patient-level splitting (not image-level)
+  - Reproducible splits with fixed random seeds
+  - K-fold cross-validation generation
+  - Split information saving/loading
 
-#### Unknown Dataset Analyzer (`src/unknown_pairs_visualizer.py`)
-- **Purpose**: Analyze unlabeled/unknown eye image pairs
+#### `src/generate_masks.py` - Pancreatic Region Mask Generation
+- **Purpose**: Create pancreatic region masks from iris segmentations
+- **Process**:
+  - Analyze iris masks to find center and radius
+  - Generate annular pancreatic region (40%-85% of iris radius)
+  - Account for left/right eye anatomical differences
+- **Output**: ROI masks for training and inference
+
+### Evaluation Files
+
+#### `src/metrices.py` - Model Evaluation
+- **Purpose**: Calculate comprehensive performance metrics on test set
+- **Metrics**: Accuracy, Precision, Recall, F1-Score, AUC-ROC, Sensitivity, Specificity
+- **Output**: Detailed performance report and confusion matrix
+
+#### `src/evaluate.py` - Performance Analysis
+- **Purpose**: Generate detailed performance analysis and visualizations
 - **Features**:
-  - Discovers image pairs without ground truth labels
-  - Shows only predictions without correctness evaluation
-  - Professional "Status: Unknown" display
-  - Same visualization quality as labeled datasets
-  - Useful for real-world deployment scenarios
+  - ROC curve analysis
+  - Probability distribution plots
+  - Cross-validation results visualization
+  - Sample prediction analysis
 
-#### Key Visualization Components
-1. **Original Image**: Unprocessed eye image with natural colors
-2. **Segmented Mask**: AI-generated iris segmentation in green overlay
-3. **Results Panel**: Patient info, predictions, probabilities, and status
-4. **Professional Layout**: Clean, medical-grade presentation
+#### `src/visualize_results.py` - Result Visualization
+- **Purpose**: Create visual outputs showing predictions with original images
+- **Features**:
+  - Side-by-side original and segmented images
+  - Prediction overlays with confidence scores
+  - Color-preserved visualization with thin borders
 
-### Usage Examples
-```bash
-# Analyze all labeled pairs with ground truth
-python src/all_pairs_visualizer.py
+### Configuration Files
 
-# Analyze unknown dataset (no ground truth)
-python src/unknown_pairs_visualizer.py
+#### `config.py` - Centralized Configuration
+- **Purpose**: Single source of truth for all paths and parameters
+- **Contains**:
+  - Directory paths for data, models, results
+  - Training hyperparameters
+  - Model architecture settings
+  - Device configuration (CPU/GPU)
+
+#### `data_split_info.json` - Split Information
+- **Purpose**: Store train/validation/test patient splits
+- **Format**: JSON with patient IDs for each split
+- **Ensures**: Reproducible data splits across runs
+
+#### `requirements.txt` - Dependencies
+- **Purpose**: Specify exact Python package versions
+- **Key Packages**: PyTorch, OpenCV, Albumentations, scikit-learn, torchmetrics
+
+## 🔄 System Workflow and Flow
+
+### Phase 1: Iris Segmentation Pipeline
+
+#### Step 1: Data Preparation
+```
+Raw Eye Images → Manual Annotations → Training Dataset
+├── Load eye images from dataset/data/control/ and dataset/data/diabetic/
+├── Load corresponding manual annotations from annotations.csv
+├── Split data into train/validation sets (85%/15%)
+└── Apply data augmentation (rotation, flip, brightness/contrast)
 ```
 
-## 📈 Performance Analysis
-
-The project includes comprehensive performance analysis tools that generate:
-
-### 1. Confusion Matrix
-- Visual representation of classification results
-- True Positives, False Positives, True Negatives, False Negatives
-- Accuracy, Sensitivity, Specificity metrics
-
-### 2. ROC Curve Analysis
-- Receiver Operating Characteristic curve
-- Area Under Curve (AUC) calculation
-- Optimal threshold determination
-
-### 3. Probability Distribution Analysis
-- Histogram of prediction probabilities
-- Box plots by class
-- Violin plots for distribution shape
-- Cumulative distribution functions
-
-### 4. Sample Results Table
-- 10 representative samples with results
-- Correct and incorrect predictions
-- Confidence levels (Low/Medium/High)
-- Patient IDs and image pairs
-
-### 5. Cross-Validation Results
-- 5-fold cross-validation performance
-- Box plots of metric distributions
-- Mean and standard deviation reporting
-
-## 🎯 Results
-
-### Model Performance Metrics
-
-#### Cross-Validation Results (5-Fold)
-| Metric | Mean ± Std | Range |
-|--------|------------|-------|
-| **Accuracy** | 92.2% ± 0.4% | 91.7% - 92.8% |
-| **Sensitivity** | 93.0% ± 0.5% | 92.3% - 93.8% |
-| **Specificity** | 91.4% ± 0.3% | 91.0% - 91.9% |
-| **F1-Score** | 92.4% ± 0.4% | 91.9% - 92.9% |
-
-#### Overall Test Performance
-- **Total Image Pairs**: 131 pairs (left-right eye combinations)
-- **Control Subjects**: 65 patients  
-- **Diabetic Subjects**: 66 patients
-- **Overall Accuracy**: 92.2%
-- **AUC-ROC**: 0.963
-- **Processing Time**: ~0.5 seconds per image pair
-
-#### Real-World Performance (2025 Update)
-- **Ensemble Model**: 5-fold trained models for robust predictions
-- **Real Predictions**: Actual model inference replacing static placeholders
-- **Confidence Levels**: Low/Medium/High based on probability thresholds
-- **Production Ready**: Integrated with visualization tools for clinical use
-
-### Key Findings
-1. **High Sensitivity**: 93.0% - Excellent detection of diabetic cases
-2. **High Specificity**: 91.4% - Low false positive rate for control subjects
-3. **Balanced Performance**: Consistent results across both classes
-4. **Robust Model**: Low standard deviation across folds indicates stability
-5. **Real-time Capable**: Fast inference suitable for clinical deployment
-6. **Professional Integration**: Complete visualization pipeline for medical review
-
-## 🔧 Technical Specifications
-
-### Hardware Requirements
-- **GPU**: NVIDIA GTX 1060 or better (6GB+ VRAM)
-- **CPU**: Intel i5 or AMD Ryzen 5 equivalent
-- **RAM**: 8GB minimum, 16GB recommended
-- **Storage**: 10GB free space
-
-### Software Environment
-- **OS**: Windows 10/11, Ubuntu 18.04+, macOS 10.15+
-- **Python**: 3.8, 3.9, 3.10, 3.11
-- **CUDA**: 11.0+ (for GPU acceleration)
-
-### Model Specifications
-- **Segmentation Model Size**: ~25MB
-- **Classification Model Size**: ~15MB per fold (75MB total)
-- **Training Time**: ~2-4 hours per phase (GPU)
-- **Inference Time**: ~0.5 seconds per image pair
-
-### Input/Output Specifications
-- **Input Image Format**: JPEG, PNG
-- **Input Resolution**: Variable (auto-resized)
-- **Output Format**: CSV results, PNG visualizations
-- **Batch Processing**: Supported for large datasets
-
-## 📝 Citation
-
-If you use this work in your research, please cite:
-
-```bibtex
-@misc{diabetes_iris_detection_2025,
-  title={Advanced Computer Vision System for Non-Invasive Diabetes Detection through Iris Analysis},
-  author={Vignesh Venkatesan and Dr. Agarwal},
-  year={2025},
-  note={GitHub repository with comprehensive visualization and real-time prediction capabilities},
-  url={https://github.com/vignshh7/Iris-Diabetes-Detection},
-  institution={Research Project},
-  version={v2.0}
-}
+#### Step 2: Segmentation Model Training
+```
+Training Images + Annotations → U-Net Training → Trained Model
+├── Initialize U-Net with MobileNetV2 encoder
+├── Train with Dice loss for binary segmentation
+├── Monitor validation loss with early stopping
+└── Save best model as best_iris_model_3class.pth
 ```
 
-### Academic Reference
-Venkatesan, V., & Agarwal, Dr. (2025). *Advanced Computer Vision System for Non-Invasive Diabetes Detection through Iris Analysis*. Retrieved from https://github.com/vignshh7/Iris-Diabetes-Detection
+#### Step 3: Iris Mask Generation
+```
+All Images → Trained Segmentation Model → Iris Masks
+├── Load trained segmentation model
+├── Process all images in dataset directories
+├── Generate binary iris masks
+└── Save masks to test_results_masks/ directories
+```
 
-## 🤝 Contributing
+### Phase 2: Classification Pipeline
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/improvement`)
-3. Commit changes (`git commit -am 'Add new feature'`)
-4. Push to branch (`git push origin feature/improvement`)
-5. Create Pull Request
+#### Step 4: ROI Extraction
+```
+Iris Masks → Geometric Analysis → Pancreatic Region Masks
+├── Analyze iris masks to find center and radius
+├── Generate annular pancreatic region masks
+├── Inner radius: 40% of iris radius
+├── Outer radius: 85% of iris radius
+└── Save ROI masks to dataset/pancreatic_masks/
+```
 
-## 📄 License
+#### Step 5: Data Splitting (Academic Rigor)
+```
+Patient Data → Stratified Splitting → Train/Val/Test Sets
+├── Patient-level stratified splitting (not image-level)
+├── Train: 60%, Validation: 20%, Test: 20%
+├── Ensure no patient appears in multiple splits
+├── Save split information for reproducibility
+└── Generate K-fold splits from train+validation data only
+```
 
-### MIT License
+#### Step 6: Classification Training (5-Fold CV)
+```
+For each fold (1-5):
+    ├── Multi-channel Feature Extraction:
+    │   ├── RGB channels (3)
+    │   ├── Grayscale channel (1)
+    │   ├── HSV channels (3)
+    │   ├── LAB channels (3)
+    │   └── Spatial mask attention (applied, not concatenated)
+    │
+    ├── Model Architecture:
+    │   ├── Custom CNN with SE-blocks
+    │   ├── GroupNorm for batch size stability
+    │   ├── Three convolutional blocks
+    │   └── Binary classification output
+    │
+    ├── Training Process:
+    │   ├── Focal loss for class imbalance
+    │   ├── AdamW optimizer (lr=1e-4)
+    │   ├── Early stopping (patience=8)
+    │   ├── Validation-based threshold optimization
+    │   └── Save best model per fold
+    │
+    └── Output: best_f1_model_fold_X.pth
+```
 
-Copyright (c) 2025 Vignesh Venkatesan and Dr. Agarwal
+#### Step 7: Ensemble Prediction
+```
+Test Images → Ensemble of 5 Models → Final Predictions
+├── Load all 5 trained models
+├── Process left-right eye pairs
+├── Multi-channel feature extraction with spatial attention
+├── Average predictions across models
+├── Apply fold-specific optimal thresholds
+└── Generate final classification with confidence scores
+```
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+#### Step 8: Performance Evaluation
+```
+Predictions + Ground Truth → Comprehensive Analysis
+├── Calculate performance metrics (Accuracy, F1, AUC, etc.)
+├── Generate confusion matrix and ROC curves
+├── Analyze prediction confidence distributions
+├── Create visualizations with prediction overlays
+└── Save results for clinical validation
+```
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+### Data Flow Architecture
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+```
+Input: Raw Eye Images (JPG)
+    ↓
+[Phase 1: Iris Segmentation]
+    ├── U-Net Training → Iris Masks
+    └── ROI Extraction → Pancreatic Masks
+    ↓
+[Phase 2: Classification]
+    ├── Multi-channel Processing:
+    │   ├── RGB → 3 channels
+    │   ├── Gray → 1 channel
+    │   ├── HSV → 3 channels
+    │   ├── LAB → 3 channels
+    │   └── Mask → Spatial attention
+    │
+    ├── Paired Eye Processing:
+    │   └── Left + Right → 20 total channels
+    │
+    ├── 5-Fold Cross-Validation:
+    │   ├── Fold 1 → Model 1
+    │   ├── Fold 2 → Model 2
+    │   ├── Fold 3 → Model 3
+    │   ├── Fold 4 → Model 4
+    │   └── Fold 5 → Model 5
+    │
+    └── Ensemble Prediction:
+        ├── Average 5 model outputs
+        ├── Apply optimal thresholds
+        └── Generate final classification
+    ↓
+Output: Diabetic/Control Classification + Confidence Score
+```
 
-### Rights and Attribution
+### Key Workflow Principles
 
-- **Primary Author**: Vignesh Venkatesan
-- **Supervising Authority**: Dr. Agarwal
-- **Institution**: Research Project
-- **Year**: 2025
+1. **Academic Rigor**: No test set contamination - test data never seen during training
+2. **Reproducibility**: Fixed random seeds and saved split information
+3. **Medical Standard**: Patient-level splitting prevents data leakage
+4. **Robust Training**: Early stopping prevents overfitting on small dataset
+5. **Optimal Performance**: Validation-based threshold optimization per fold
+6. **Ensemble Approach**: 5-model ensemble for improved stability
+7. **Spatial Attention**: Mask-guided learning focuses on pancreatic regions
 
-All rights reserved by the above mentioned authors. This project represents original research work in the field of medical computer vision and diabetes detection through iris analysis.
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **CUDA Out of Memory**
-   - Reduce batch size in config files
-   - Use CPU mode by setting `DEVICE = "cpu"`
-
-2. **Missing Dependencies**
-   - Ensure all packages in requirements.txt are installed
-   - Use virtual environment to avoid conflicts
-
-3. **Path Errors**
-   - Verify dataset directory structure matches documentation
-   - Use absolute paths if relative paths fail
-
-4. **Model Loading Errors**
-   - Ensure model files are not corrupted
-   - Check device compatibility (CPU/GPU)
-
-### Support
-
-For issues and questions:
-- 🐛 [GitHub Issues](https://github.com/vignshh7/Iris-Diabetes-Detection/issues)
-- 📖 [Documentation](https://github.com/vignshh7/Iris-Diabetes-Detection/tree/main/docs)
-- 💬 Contact via GitHub profile
-
-## 📞 Contact
-
-### Primary Author
-- **Name**: Vignesh Venkatesan
-- **GitHub**: [@vignshh7](https://github.com/vignshh7)
-- **Role**: Lead Developer & Researcher
-
-### Supervising Authority
-- **Name**: Dr. Agarwal
-- **Role**: Project Supervisor & Research Guidance
-
-### Project Information
-- **Repository**: [Iris-Diabetes-Detection](https://github.com/vignshh7/Iris-Diabetes-Detection)
-- **Version**: 2.0 (October 2025)
-- **Status**: Production-Ready with Real-time Capabilities
-
-### Support & Collaboration
-For technical support, research collaboration, or clinical validation inquiries:
-- 🐛 [GitHub Issues](https://github.com/vignshh7/Iris-Diabetes-Detection/issues)
-- 📖 [Documentation](https://github.com/vignshh7/Iris-Diabetes-Detection)
-- 💬 Contact via GitHub profile
-
----
-
-**Disclaimer**: This project is developed for research and educational purposes. Clinical validation and regulatory approval are required before medical deployment. The authors provide this software "as-is" without warranties for medical diagnosis.
+This workflow ensures scientifically sound results suitable for medical AI validation and potential clinical deployment.

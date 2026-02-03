@@ -12,14 +12,19 @@ MODELS_DIR = os.path.join(PROJECT_ROOT, 'models')
 DOCS_DIR = os.path.join(PROJECT_ROOT, 'docs')
 RESULTS_DIR = os.path.join(PROJECT_ROOT, 'results')
 
-# Dataset directories (these will be gitignored)
+# Dataset directories (new clean structure)
 DATASET_DIR = os.path.join(PROJECT_ROOT, 'dataset')
-CONTROL_DIR = os.path.join(DATASET_DIR, 'control')
-DIABETIC_DIR = os.path.join(DATASET_DIR, 'diabetic')
-TESTING_DIR = os.path.join(DATASET_DIR, 'testing')
-TESTING1_DIR = os.path.join(DATASET_DIR, 'testing1')
+DATA_DIR = os.path.join(DATASET_DIR, 'data')
+CONTROL_DIR = os.path.join(DATA_DIR, 'control')
+DIABETIC_DIR = os.path.join(DATA_DIR, 'diabetic')
 MASKS_DIR = os.path.join(DATASET_DIR, 'masks')
-IMAGES_FOR_MASKS_TRAINING_DIR = os.path.join(DATASET_DIR, 'imagesformaskstraining')
+PANCREATIC_MASKS_DIR = os.path.join(DATASET_DIR, 'pancreatic_masks')
+
+# Separate mask directories
+CONTROL_MASKS_DIR = os.path.join(MASKS_DIR, 'control')
+DIABETIC_MASKS_DIR = os.path.join(MASKS_DIR, 'diabetic')
+CONTROL_PANCREATIC_MASKS_DIR = os.path.join(PANCREATIC_MASKS_DIR, 'control')
+DIABETIC_PANCREATIC_MASKS_DIR = os.path.join(PANCREATIC_MASKS_DIR, 'diabetic')
 
 # Pancreatic masks directories
 PANCREAS_MASKS_TRAIN_DIR = os.path.join(DATASET_DIR, 'pancreas_masks_for_training')
