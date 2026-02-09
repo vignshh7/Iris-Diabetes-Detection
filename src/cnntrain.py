@@ -206,6 +206,10 @@ def find_optimal_threshold(y_true, y_probs, thresholds=None):
 
 # --- 5. Main K-Fold Training Execution ---
 if __name__ == '__main__':
+    # --- Run mask generation before training ---
+    print("\n[INFO] Generating masks for all images (if needed)...")
+    os.system(f'{sys.executable} src{os.sep}generate_masks.py')
+    print("[INFO] Mask generation complete. Proceeding to training...\n")
     # Create data manager with proper splits
     data_manager = create_data_manager(test_size=0.2, val_size=0.2, random_state=42)
     

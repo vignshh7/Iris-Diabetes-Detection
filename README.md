@@ -1,11 +1,3 @@
-# Diabetes Detection from Iris Images
-
-## Project Overview
-This system detects diabetes through non-invasive iris image analysis using computer vision and deep learning. The project employs a two-stage approach: iris segmentation followed by pancreatic region classification to identify diabetic patterns in eye images.
-
-## 📁 Dataset Structure
-
-```
 eye_project/
 ├── 📁 dataset/                           # Main dataset directory
 │   ├── 📁 data/                          # Raw image data
@@ -55,9 +47,45 @@ eye_project/
 ├── requirements.txt                     # Python dependencies
 ├── data_split_info.json                # Train/val/test splits
 └── README.md                           # This documentation
-```
+## Eye Project: Diabetes Detection from Iris Images
 
-### Dataset Characteristics
+### Overview
+This project predicts diabetes from paired iris images using deep learning. It includes:
+- Automated mask generation
+- Ensemble CNN classification
+- Robust data splits (no leakage)
+- Easy prediction for new hospital data
+
+### Folder Structure
+- `dataset/` — Contains all data and masks (see below)
+- `models/` — Trained model weights (per fold)
+- `src/` — All code (training, prediction, mask generation, etc.)
+- `realdata/` — For hospital/test images (put images in `realdata/images/`)
+
+### How to Train
+1. Place your images in `dataset/data/control/` and `dataset/data/diabetic/`.
+2. Run: `python src/cnntrain.py`
+  - This auto-generates masks and trains 5-fold ensemble models.
+  - Models are saved in `models/`.
+
+### How to Predict on New Data
+1. Put new image pairs in `realdata/images/` (no subfolders).
+2. Run: `python src/predict_realdata.py`
+  - Generates masks and predicts for all pairs.
+  - Results saved as `realdata_predictions.csv`.
+
+### Key Implementation Details
+- Uses multiple color channels (RGB, gray, HSV, LAB) for each eye.
+- Mask is used as spatial attention (not as a direct input channel).
+- All splits and results are reproducible.
+
+### Requirements
+- Python 3.8+
+- See `requirements.txt` for dependencies.
+
+### Notes
+- Do NOT upload actual images to GitHub. Only keep folder structure and code.
+- For any new data, just add images and rerun the scripts—everything else is automated.
 - **Total Patients**: 128 (52 control, 76 diabetic)
 - **Images per Patient**: 2 (left eye, right eye)
 - **Image Format**: JPEG

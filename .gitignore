@@ -1,8 +1,25 @@
+# Ignore test result analysis
+test_results_analysis/
 # Dataset and Data Files
 dataset/
 
 # Analysis Results (Generated during runtime)
-test_results_analysis/
+
+# Allow dataset structure, but ignore actual images
+dataset/data/control/*
+dataset/data/diabetic/*
+!dataset/
+!dataset/data/
+!dataset/data/control/
+!dataset/data/diabetic/
+!dataset/masks/
+!dataset/pancreatic_masks/
+
+# Ignore images in data folders
+dataset/data/control/*.jpg
+dataset/data/control/*.png
+dataset/data/diabetic/*.jpg
+dataset/data/diabetic/*.png
 
 # Temporary Files
 temp/
