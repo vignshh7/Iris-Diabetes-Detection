@@ -1,53 +1,57 @@
-eye_project/
-├── 📁 dataset/                           # Main dataset directory
-│   ├── 📁 data/                          # Raw image data
-│   │   ├── 📁 control/                   # Control (healthy) subject images
-│   │   │   ├── patient_1_left.jpg
-│   │   │   ├── patient_1_right.jpg
-│   │   │   └── ... (52 patients × 2 eyes)
-│   │   └── 📁 diabetic/                  # Diabetic subject images
-│   │       ├── patient_53_left.jpg
-│   │       ├── patient_53_right.jpg
-│   │       └── ... (76 patients × 2 eyes)
-│   │
-│   ├── 📁 masks/                         # Manual annotations for training
-│   │   ├── 📁 control/                   # Control iris masks
-│   │   └── 📁 diabetic/                  # Diabetic iris masks
-│   │
-│   └── 📁 pancreatic_masks/              # Generated ROI masks
-│       ├── 📁 control/                   # Control pancreatic region masks
-│       └── 📁 diabetic/                  # Diabetic pancreatic region masks
-│
-├── 📁 models/                            # Trained model checkpoints
-│   ├── best_iris_model_3class.pth        # Iris segmentation model
-│   ├── best_f1_model_fold_1.pth          # Classification model fold 1
-│   ├── best_f1_model_fold_2.pth          # Classification model fold 2
-│   ├── best_f1_model_fold_3.pth          # Classification model fold 3
-│   ├── best_f1_model_fold_4.pth          # Classification model fold 4
-│   └── best_f1_model_fold_5.pth          # Classification model fold 5
-│
-├── 📁 src/                               # Source code directory
-│   ├── cnntrain.py                       # Classification training script
-│   ├── cnnpredict.py                     # Classification prediction script
-│   ├── maskstrain.py                     # Iris segmentation training
-│   ├── maskspredict.py                   # Iris mask generation
-│   ├── generate_masks.py                 # Pancreatic mask generation
-│   ├── metrices.py                       # Model evaluation
-│   ├── evaluate.py                       # Performance analysis
-│   ├── data_manager.py                   # Data splitting and management
-│   └── visualize_results.py              # Result visualization
-│
-├── 📁 test_results_analysis/             # Generated test analysis results
-│   ├── 📁 images/                        # Visualization plots (confusion matrix, ROC curve, etc.)
-│   ├── 📁 metrics/                       # Performance metrics and JSON reports
-│   └── 📁 csv/                           # Test predictions and evaluation results
-│
-│
-├── config.py                            # Centralized configuration
-├── requirements.txt                     # Python dependencies
-├── data_split_info.json                # Train/val/test splits
-└── README.md                           # This documentation
+
 ## Eye Project: Diabetes Detection from Iris Images
+
+### Overview
+This project predicts diabetes from paired iris images using deep learning. It includes:
+- Automated mask generation
+- Ensemble CNN classification
+- Robust data splits (no leakage)
+- Easy prediction for new hospital data
+
+### Project Folder Structure
+```
+eye_project/
+├── dataset/                # Main dataset directory
+│   ├── data/               # Raw image data
+│   │   ├── control/        # Control (healthy) subject images
+│   │   └── diabetic/       # Diabetic subject images
+│   ├── masks/              # Manual annotations for training
+│   │   ├── control/        # Control iris masks
+│   │   └── diabetic/       # Diabetic iris masks
+│   └── pancreatic_masks/   # Generated ROI masks
+│       ├── control/        # Control pancreatic region masks
+│       └── diabetic/       # Diabetic pancreatic region masks
+├── models/                 # Trained model checkpoints
+│   ├── best_iris_model_3class.pth
+│   ├── best_f1_model_fold_1.pth
+│   ├── best_f1_model_fold_2.pth
+│   ├── best_f1_model_fold_3.pth
+│   ├── best_f1_model_fold_4.pth
+│   └── best_f1_model_fold_5.pth
+├── src/                    # Source code directory
+│   ├── cnntrain.py         # Classification training script
+│   ├── cnnpredict.py       # Classification prediction script
+│   ├── maskstrain.py       # Iris segmentation training
+│   ├── maskspredict.py     # Iris mask generation
+│   ├── generate_masks.py   # Pancreatic mask generation
+│   ├── metrices.py         # Model evaluation
+│   ├── evaluate.py         # Performance analysis
+│   ├── data_manager.py     # Data splitting and management
+│   └── visualize_results.py# Result visualization
+├── test_results_analysis/  # Generated test analysis results
+│   ├── images/             # Visualization plots (confusion matrix, ROC curve, etc.)
+│   ├── metrics/            # Performance metrics and JSON reports
+│   └── csv/                # Test predictions and evaluation results
+├── realdata/               # For hospital/test images and predictions
+│   ├── images/             # Place new image pairs here (flat, no subfolders)
+│   ├── masks/              # Auto-generated masks for realdata images
+│   ├── pancreatic_masks/   # Auto-generated pancreatic masks for realdata images
+│   └── realdata_predictions.csv # Output predictions for realdata images
+├── config.py               # Centralized configuration
+├── requirements.txt        # Python dependencies
+├── data_split_info.json    # Train/val/test splits
+└── README.md               # This documentation
+```
 
 ### Overview
 This project predicts diabetes from paired iris images using deep learning. It includes:
@@ -150,14 +154,6 @@ This project predicts diabetes from paired iris images using deep learning. It i
 - **Purpose**: Calculate comprehensive performance metrics on test set
 - **Metrics**: Accuracy, Precision, Recall, F1-Score, AUC-ROC, Sensitivity, Specificity
 - **Output**: Detailed performance report and confusion matrix
-
-#### `src/evaluate.py` - Performance Analysis
-- **Purpose**: Generate detailed performance analysis and visualizations
-- **Features**:
-  - ROC curve analysis
-  - Probability distribution plots
-  - Cross-validation results visualization
-  - Sample prediction analysis
 
 #### `src/visualize_results.py` - Comprehensive Test Analysis
 - **Purpose**: Generate complete test analysis with visualizations and metrics
@@ -325,14 +321,5 @@ Input: Raw Eye Images (JPG)
 Output: Diabetic/Control Classification + Confidence Score
 ```
 
-### Key Workflow Principles
-
-1. **Academic Rigor**: No test set contamination - test data never seen during training
-2. **Reproducibility**: Fixed random seeds and saved split information
-3. **Medical Standard**: Patient-level splitting prevents data leakage
-4. **Robust Training**: Early stopping prevents overfitting on small dataset
-5. **Optimal Performance**: Validation-based threshold optimization per fold
-6. **Ensemble Approach**: 5-model ensemble for improved stability
-7. **Spatial Attention**: Mask-guided learning focuses on pancreatic regions
-
-This workflow ensures scientifically sound results suitable for medical AI validation and potential clinical deployment.
+---
+Made by Vignesh
