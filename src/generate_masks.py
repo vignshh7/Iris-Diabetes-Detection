@@ -9,6 +9,7 @@ import os
 import cv2
 import numpy as np
 import torch
+import shutil
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import segmentation_models_pytorch as smp
@@ -143,7 +144,7 @@ def create_pancreas_mask_from_iris_mask(iris_mask, eye_side):
 
 def process_directory(image_dir, class_name, model, transforms):
     """Process all images in a directory"""
-    image_files = glob.glob(os.path.join(image_dir, '*.jpg'))
+    image_files = glob.glob(os.path.join(image_dir, '*.jpg')) + glob.glob(os.path.join(image_dir, '*.jpeg'))
     
     # Determine output directories based on class
     if class_name.lower() == 'control':
@@ -188,6 +189,17 @@ def main():
     print("=== Unified Mask Generation System ===")
     print(f"Device: {CONFIG.DEVICE}")
     
+    # Clear existing mask directories before generating new ones
+    mask_dirs_to_clear = [
+        CONFIG.MASKS_OUTPUT_DIR,
+        CONFIG.PANCREATIC_MASKS_OUTPUT_DIR
+    ]
+    
+    for mask_dir in mask_dirs_to_clear:
+        if os.path.exists(mask_dir):
+            print(f"Clearing existing masks in: {mask_dir}")
+            shutil.rmtree(mask_dir)
+    
     # Create output directories for both control and diabetic
     directories_to_create = [
         CONFIG.CONTROL_MASKS_DIR,
@@ -198,6 +210,9 @@ def main():
     
     for directory in directories_to_create:
         os.makedirs(directory, exist_ok=True)
+        # Create .gitkeep files to preserve folder structure
+        with open(os.path.join(directory, '.gitkeep'), 'w') as f:
+            f.write('')
         print(f"Created directory: {directory}")
     
     # Load iris segmentation model

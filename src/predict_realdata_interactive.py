@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 # Fix import for direct script execution
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.predict_realdata import find_image_pairs, load_ensemble_models, predict_with_ensemble
+from src.predict_realdata import find_image_pairs, load_ensemble_models, predict_with_ensemble, generate_masks_for_realdata
 import config as Config
 
 # Add CHANNELS_TO_USE here to avoid config.py dependency
@@ -53,6 +53,10 @@ def calc_metrics(results):
     return {'TP':tp,'TN':tn,'FP':fp,'FN':fn,'Accuracy':acc,'Precision':prec,'Recall':rec,'F1':f1}
 
 def main():
+    print("[INFO] Generating masks for all images in realdata/images...")
+    generate_masks_for_realdata()
+    print("[INFO] Masks generated successfully.")
+    
     images_dir = os.path.join('realdata','images')
     pairs = find_image_pairs(images_dir)
     models = load_ensemble_models()
