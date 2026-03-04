@@ -19,6 +19,9 @@ gradcam_outputs/*
 simulated_results_1000pairs/*
 src/generated_figures/*
 
+# But keep .gitkeep files to preserve folder structure
+!**/.gitkeep
+
 # Allow folder structure, keep scripts
 !dataset/
 !dataset/data/
