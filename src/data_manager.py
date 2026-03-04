@@ -101,12 +101,12 @@ class DataManager:
         # Group files by patient ID with improved extraction
         patient_files = defaultdict(lambda: {'L': None, 'R': None})
         
-        for image_path in glob.glob(os.path.join(image_dir, '*.jpg')):
+        for image_path in glob.glob(os.path.join(image_dir, '*.jpg')) + glob.glob(os.path.join(image_dir, '*.jpeg')):
             filename = os.path.basename(image_path)
             # More robust patient ID extraction
             match = re.search(r'(\d+)(L|R)', filename, re.IGNORECASE)
             if match:
-                patient_id = f"{label_name}_{match.group(1)}"  # Prefix with class to ensure uniqueness
+                patient_id = f"{label_name}_{match.group(1)}"  # Keep Control_/Diabetic_ prefix for ground truth
                 eye = match.group(2).upper()
                 patient_files[patient_id][eye] = image_path
             else:

@@ -4,6 +4,23 @@ desktop.ini
 test_results_analysis/
 temp/
 
+# Ignore orphaned backup files but preserve structure
+orphaned_backup/control/*
+orphaned_backup/diabetic/*
+!orphaned_backup/
+!orphaned_backup/control/
+!orphaned_backup/diabetic/
+
+# Ignore all image files (comprehensive list)
+*.jpg
+*.jpeg
+*.png
+*.tiff
+*.bmp
+*.gif
+*.webp
+*.svg
+
 # Ignore all images in dataset, masks, pancreatic_masks, realdata, gradcam_outputs, etc, but keep folder structure
 dataset/data/control/*
 dataset/data/diabetic/*
@@ -18,6 +35,9 @@ figures_286pairs/*
 gradcam_outputs/*
 simulated_results_1000pairs/*
 src/generated_figures/*
+
+# But keep .gitkeep files to preserve folder structure
+!**/.gitkeep
 
 # Allow folder structure, keep scripts
 !dataset/
@@ -37,6 +57,9 @@ src/generated_figures/*
 !figures_286pairs/
 !gradcam_outputs/
 !simulated_results_1000pairs/
+!orphaned_backup/
+!orphaned_backup/control/
+!orphaned_backup/diabetic/
 !src/
 !src/generated_figures/
 

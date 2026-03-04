@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import csv
 import glob
+import shutil
 from tqdm import tqdm
 
 # Add project root to path for config import
@@ -22,8 +23,21 @@ MASKS_DIR = os.path.join(REALDATA_DIR, 'masks')
 PANCREATIC_MASKS_DIR = os.path.join(REALDATA_DIR, 'pancreatic_masks')
 CSV_OUTPUT = 'realdata_predictions.csv'
 def generate_masks_for_realdata():
+    # Clear existing masks before generating new ones
+    if os.path.exists(MASKS_DIR):
+        shutil.rmtree(MASKS_DIR)
+    if os.path.exists(PANCREATIC_MASKS_DIR):
+        shutil.rmtree(PANCREATIC_MASKS_DIR)
+    
     os.makedirs(MASKS_DIR, exist_ok=True)
     os.makedirs(PANCREATIC_MASKS_DIR, exist_ok=True)
+    
+    # Create .gitkeep files to preserve folder structure
+    with open(os.path.join(MASKS_DIR, '.gitkeep'), 'w') as f:
+        f.write('')
+    with open(os.path.join(PANCREATIC_MASKS_DIR, '.gitkeep'), 'w') as f:
+        f.write('')
+    
     iris_model_path = os.path.join(MODELS_DIR, 'best_iris_model_3class.pth')
     if not os.path.exists(iris_model_path):
         iris_model_path = os.path.join(MODELS_DIR, 'best_iris_model_2class.pth')
@@ -32,7 +46,7 @@ def generate_masks_for_realdata():
         return
     model = load_iris_model(iris_model_path)
     transforms = get_inference_transforms()
-    files = [f for f in os.listdir(IMAGES_DIR) if f.lower().endswith('.jpg')]
+    files = [f for f in os.listdir(IMAGES_DIR) if f.lower().endswith(('.jpg', '.jpeg'))]
     for f in tqdm(files, desc='Generating masks for realdata'):
         img_path = os.path.join(IMAGES_DIR, f)
         base_name = os.path.splitext(f)[0]
@@ -51,7 +65,7 @@ def generate_masks_for_realdata():
 
 import re
 def find_image_pairs(directory):
-    files = [f for f in os.listdir(IMAGES_DIR) if f.lower().endswith('.jpg')]
+    files = [f for f in os.listdir(IMAGES_DIR) if f.lower().endswith(('.jpg', '.jpeg'))]
     patient_dict = {}
     for f in files:
         match = re.match(r"(\d+)([LR])\.", f, re.IGNORECASE)
