@@ -1,28 +1,49 @@
-# Ignore test result analysis
+desktop.ini
+
+# Ignore analysis and temp folders
 test_results_analysis/
-# Dataset and Data Files
-dataset/
+temp/
 
-# Analysis Results (Generated during runtime)
-
-# Allow dataset structure, but ignore actual images
+# Ignore all images in dataset, masks, pancreatic_masks, realdata, gradcam_outputs, etc, but keep folder structure
 dataset/data/control/*
 dataset/data/diabetic/*
+dataset/masks/control/*
+dataset/masks/diabetic/*
+dataset/pancreatic_masks/control/*
+dataset/pancreatic_masks/diabetic/*
+realdata/images/*
+realdata/masks/*
+realdata/pancreatic_masks/*
+figures_286pairs/*
+gradcam_outputs/*
+simulated_results_1000pairs/*
+src/generated_figures/*
+
+# Allow folder structure, keep scripts
 !dataset/
 !dataset/data/
 !dataset/data/control/
 !dataset/data/diabetic/
 !dataset/masks/
+!dataset/masks/control/
+!dataset/masks/diabetic/
 !dataset/pancreatic_masks/
+!dataset/pancreatic_masks/control/
+!dataset/pancreatic_masks/diabetic/
+!realdata/
+!realdata/images/
+!realdata/masks/
+!realdata/pancreatic_masks/
+!figures_286pairs/
+!gradcam_outputs/
+!simulated_results_1000pairs/
+!src/
+!src/generated_figures/
 
-# Ignore images in data folders
-dataset/data/control/*.jpg
-dataset/data/control/*.png
-dataset/data/diabetic/*.jpg
-dataset/data/diabetic/*.png
+# Ignore all CSV files
+*.csv
 
-# Temporary Files
-temp/
+# Temporary and Python cache files
 __pycache__/
 *.pyc
 *.pyo
@@ -62,9 +83,6 @@ desktop.ini
 # *.pt
 # *.pkl
 # *.h5
-
-# CSV Result Files (Generated during runtime)
-*.csv
 
 # Jupyter Notebook Checkpoints
 .ipynb_checkpoints/
