@@ -6,21 +6,6 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)]()
 
----
-
-## 📋 Table of Contents
-- [Overview](#-overview)
-- [Features](#-features)
-- [Dataset Statistics](#-dataset-statistics)
-- [Project Structure](#-project-structure)
-- [Quick Start](#-quick-start)
-- [System Architecture](#-system-architecture)
-- [Usage Guide](#-usage-guide)
-- [Configuration](#-configuration)
-- [Troubleshooting](#-troubleshooting)
-
----
-
 ## 🎯 Overview
 
 This project implements an automated pipeline for diabetes detection from iris images using deep learning. The system uses a multi-channel CNN ensemble with spatial attention mechanisms to classify patients as diabetic or control based on paired left-right iris images.
@@ -342,17 +327,6 @@ A: Each patient needs both left (L) and right (R) images. Check local backup for
 
 ---
 
-## 📊 Expected Performance
-
-| Metric | Value |
-|--------|-------|
-| **Test Accuracy** | ~80% (26 held-out patients) |
-| **Ensemble Benefit** | +5-7% over single model |
-| **Inference Speed** | <1 sec/patient (GPU) |
-| **AUC-ROC** | ~0.85 |
-
----
-
 ## 🔒 Git Structure
 
 - **`.gitkeep` files** preserve empty folder structure
@@ -366,26 +340,6 @@ A: Each patient needs both left (L) and right (R) images. Check local backup for
 ## 📜 License
 
 See [LICENSE](LICENSE) file for details.
-
----
-
-## 🤝 Contributing
-
-1. Keep data splits reproducible (don't modify `data_split_info.json` manually)
-2. Maintain sequential numbering convention
-3. Test changes with full pipeline (process → train → evaluate)
-4. Document architecture or hyperparameter changes
-
----
-
-## 📞 Support
-
-For issues:
-1. Check local output folders for error logs
-2. Verify folder structure matches documentation
-3. Ensure all requirements are installed
-4. Review `config.py` for parameter conflicts
-
 ---
 
 **Last Updated**: March 2026  
