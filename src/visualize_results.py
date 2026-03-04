@@ -733,7 +733,7 @@ Precision: {precision:.3f} | F1-Score: {f1:.3f}
         for search_dir in search_dirs:
             if os.path.exists(search_dir):
                 for filename in os.listdir(search_dir):
-                    if pattern in filename and filename.endswith('.jpg'):
+                    if pattern in filename and filename.endswith(('.jpg', '.jpeg')):
                         return os.path.join(search_dir, filename)
         return None
     
