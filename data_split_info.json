@@ -138,7 +138,7 @@
   "val_size": 26,
   "test_size": 26,
   "random_state": 42,
-  "split_timestamp": "2026-02-03T22:25:55.778736",
+  "split_timestamp": "2026-02-10T16:51:17.814700",
   "train_patient_ids": [
     "Control_43",
     "Diabetic_2",

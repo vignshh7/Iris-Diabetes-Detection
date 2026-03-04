@@ -118,6 +118,48 @@ This project predicts diabetes from paired iris images using deep learning. It i
 - **Process**: Load 5-fold models, ensemble predictions, apply optimal thresholds
 - **Output**: CSV file with patient predictions and probabilities
 
+#### `src/gradcam_generate.py` - Grad-CAM / Grad-CAM++ Visual Explanations
+- **Purpose**: Generate Grad-CAM heatmaps to visualize which iris regions the classifier focuses on (paper-ready overlays)
+- **Uses**: The *exact same preprocessing* as `src/cnnpredict.py` (multi-channel + pancreatic mask spatial attention)
+- **Input**: A left-eye image + right-eye image (same patient)
+- **Output**: PNG heatmaps/overlays in `gradcam_outputs/` + a JSON metadata file with probabilities/logits
+
+**Example (recommended for research figures: average across 5 folds + per-eye isolation):**
+```bash
+python src/gradcam_generate.py \
+  --models-dir models \
+  --left dataset/data/control/10L.IMG20250525165821.jpg \
+  --right dataset/data/control/10R.IMG20250525165746.jpg \
+  --patient-class control \
+  --method gradcampp \
+  --target pred \
+  --eye all \
+  --overlay-size original \
+  --outdir gradcam_outputs
+```
+
+**Notes**
+- Use `--eye left` / `--eye right` to isolate which eye contributes most (the model concatenates left/right as channels, so isolation improves interpretability).
+- If your masks are missing, the pipeline will fall back to a blank mask (outputs still generated, but attention may be less meaningful).
+
+#### `src/gradcam_montage.py` - Paper Figures for 10 Pairs (White BG, Up/Down)
+- **Purpose**: Generate *paper-ready* figures for multiple patients, where each figure has 3 columns:
+  1) Original image (top=left eye, bottom=right eye)
+  2) Iris masks (top=left mask, bottom=right mask)
+  3) Grad-CAM (top=left-only CAM overlay, bottom=right-only CAM overlay)
+- **Output**: Saves **10 separate PNG figures** into `gradcam_outputs/` + one JSON file listing the exact pairs used (reproducibility).
+
+**Example (10 control pairs):**
+```bash
+python src/gradcam_montage.py \
+  --patient-class control \
+  --models-dir models \
+  --n 10 \
+  --method gradcampp \
+  --target pred \
+  --outdir gradcam_outputs
+```
+
 #### `src/maskstrain.py` - Iris Segmentation Training
 - **Purpose**: Train U-Net model for iris segmentation
 - **Architecture**: U-Net with MobileNetV2 encoder

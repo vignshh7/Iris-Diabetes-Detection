@@ -99,8 +99,8 @@ def process_single_eye_realdata(image_path, config, apply_mask_attention=True):
     if mask is None:
         print(f"Warning: Mask not found at {mp}. Using a blank mask.")
         mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
-    img = cv2.resize(img, (config.IMG_SIZE, config.IMG_SIZE))
-    mask = cv2.resize(mask, (config.IMG_SIZE, config.IMG_SIZE))
+    img = cv2.resize(img, (config.IMAGE_SIZE, config.IMAGE_SIZE))
+    mask = cv2.resize(mask, (config.IMAGE_SIZE, config.IMAGE_SIZE))
     channels_to_stack = []
     if 'rgb' in config.CHANNELS_TO_USE: channels_to_stack.append(img)
     if 'gray' in config.CHANNELS_TO_USE: channels_to_stack.append(cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)[...,np.newaxis])
@@ -155,11 +155,21 @@ def predict_realdata():
     pairs = find_image_pairs(IMAGES_DIR)
     print(f"[INFO] Found {len(pairs)} image pairs for prediction.")
     results = []
+    
+    # Create a simple config object with the required attributes from config module
+    class SimpleConfig:
+        IMAGE_SIZE = 128  # Use 128 to match trained models, not config.IMAGE_SIZE (256)
+        CHANNELS_TO_USE = ['rgb', 'gray', 'hsv', 'lab', 'mask']
+        DEVICE = Config.DEVICE
+        INPUT_CHANNELS = Config.INPUT_CHANNELS
+    
+    simple_config = SimpleConfig()
+    
     for idx, (left_img, right_img) in enumerate(pairs, 1):
         left_path = os.path.join(IMAGES_DIR, left_img)
         right_path = os.path.join(IMAGES_DIR, right_img)
         print(f"[PAIR {idx}/{len(pairs)}] Predicting: {left_img} & {right_img}")
-        pred, prob = predict_with_ensemble(models, left_path, right_path, Config)
+        pred, prob = predict_with_ensemble(models, left_path, right_path, simple_config)
         confidence = (
             "HIGH" if prob >= 0.7 or prob <= 0.3
             else "MEDIUM" if prob >= 0.6 or prob <= 0.4
