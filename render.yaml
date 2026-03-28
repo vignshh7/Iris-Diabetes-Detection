@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: iris-diabetes-detection
+    env: docker
+    plan: starter
+    autoDeploy: true
+    dockerfilePath: ./online/Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: GUNICORN_WORKERS
+        value: "1"
+      - key: GUNICORN_THREADS
+        value: "4"
+      - key: GUNICORN_TIMEOUT
+        value: "900"
+      # Optional: set this in Render dashboard if models are not in repo
+      # - key: MODEL_BASE_URL
+      #   sync: false
+      # Optional: comma-separated model file list
+      # - key: MODEL_FILES
+      #   value: "best_f1_model_fold_1.pth,best_f1_model_fold_2.pth,best_f1_model_fold_3.pth,best_f1_model_fold_4.pth,best_f1_model_fold_5.pth,best_iris_model_3class.pth,best_iris_model_2class.pth"
