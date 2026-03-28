@@ -49,6 +49,9 @@ If model files are already committed in repo under /models, you can skip MODEL_B
 - Calculate measures
 
 ## 8. Common fixes
+- Build error: `COPY requirements.txt /app/requirements.txt: not found`
+	- Cause: Root Directory is set to `online` so Docker context only includes `online/`
+	- Fix: set Root Directory to empty (repo root), then redeploy with **Clear build cache**
 - "No module named src": ensure Root Directory is empty (repo root)
 - OpenCV runtime errors: Dockerfile already installs libgl1 and libglib2.0-0
 - Slow inference: CPU deployment is expected to be slower than local GPU

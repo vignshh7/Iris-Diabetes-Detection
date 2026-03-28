@@ -2,6 +2,7 @@ services:
   - type: web
     name: iris-diabetes-detection
     env: docker
+    rootDir: .
     plan: starter
     autoDeploy: true
     dockerfilePath: ./online/Dockerfile
