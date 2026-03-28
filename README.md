@@ -96,6 +96,42 @@ Drop images in `realdata/images/` and run option 4. No ground truth needed. Resu
 ```
 
 Trained with Focal Loss (handles class imbalance), early stopping (patience=8), tuned threshold per fold.
+### Web App Usage
+
+You can now run predictions from a browser interface with file selection and result tables.
+
+```bash
+# Start the web app (recommended)
+run_webapp.bat
+
+# Or start manually
+python webapp/app.py
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5000
+```
+
+Web app notes:
+- Upload files as paired names like `1L.jpg`, `1R.jpg`, `2L.jpeg`, `2R.jpeg`
+- Supported file types: `.jpg`, `.jpeg`
+- The app writes selected files into `realdata/images/` and runs the existing `predict_realdata.py` pipeline
+- Results are shown in the browser and also saved to `realdata_predictions.csv`
+
+### Script Details
+
+| Script | Purpose | Inputs | Outputs |
+|--------|---------|--------|---------|  
+| `process_new_dataset.py` | Dataset processor | `dataset_backup/` | `dataset/data/` |
+| `cnntrain.py` | Model training | `dataset/data/` | `models/*.pth` |
+| `metrices.py` | Test evaluation | `data_split_info.json` | `evaluation_results.csv` |
+| `predict_realdata.py` | Batch prediction | `realdata/images/` | `realdata_predictions.csv` |
+| `predict_realdata_interactive.py` | Interactive predict | `realdata/images/` | `realdata_pair_predictions.csv` |
+| `generate_masks.py` | Mask generation | Image folders | Mask folders |
+| `visualize_results.py` | Result visualization | Prediction CSVs | Figures (local) |
+| `gradcam_generate.py` | Explainability | Image pairs | Heatmaps (local) |
 
 ---
 

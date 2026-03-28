@@ -50,10 +50,10 @@ def generate_masks_for_realdata():
     for f in tqdm(files, desc='Generating masks for realdata'):
         img_path = os.path.join(IMAGES_DIR, f)
         base_name = os.path.splitext(f)[0]
-        match = re.match(r"(\d+)([LR])\.", f, re.IGNORECASE)
-        if not match:
+        parsed = _extract_patient_eye(f)
+        if not parsed:
             continue
-        eye_side = 'left' if match.group(2).upper() == 'L' else 'right'
+        eye_side = 'left' if parsed[1] == 'L' else 'right'
         iris_mask = generate_iris_mask(model, img_path, transforms)
         if iris_mask is not None:
             iris_mask_path = os.path.join(MASKS_DIR, f"{base_name}_mask.png")
@@ -64,14 +64,23 @@ def generate_masks_for_realdata():
                 cv2.imwrite(pancreas_mask_path, pancreas_mask)
 
 import re
+
+
+def _extract_patient_eye(filename):
+    # Accepts short names (1L.jpg/1R.jpg) and extended names (1L.IMG....jpg)
+    match = re.match(r"^(\d+)([LR])(?:[._-]|$)", filename, re.IGNORECASE)
+    if not match:
+        return None
+    return match.group(1), match.group(2).upper()
+
+
 def find_image_pairs(directory):
     files = [f for f in os.listdir(IMAGES_DIR) if f.lower().endswith(('.jpg', '.jpeg'))]
     patient_dict = {}
     for f in files:
-        match = re.match(r"(\d+)([LR])\.", f, re.IGNORECASE)
-        if match:
-            patient_num = match.group(1)
-            eye = match.group(2).upper()
+        parsed = _extract_patient_eye(f)
+        if parsed:
+            patient_num, eye = parsed
             if patient_num not in patient_dict:
                 patient_dict[patient_num] = {'L': [], 'R': []}
             patient_dict[patient_num][eye].append(f)
