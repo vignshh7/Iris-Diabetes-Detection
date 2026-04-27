@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iris Diabetes Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
+  <div class="bg-shape bg-shape-2" aria-hidden="true"></div>
+
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Diabetes Detection</p>
+      <h1>Run Iris Prediction From Your Browser</h1>
+      <p class="subtitle">
+        Select paired eye images and run your existing ensemble model pipeline directly from this web interface.
+      </p>
+    </header>
+
+    <section class="panel upload-panel">
+      <div class="panel-head">
+        <h2>Upload Input Images</h2>
+        <p>Upload <strong>.jpg</strong> or <strong>.jpeg</strong> files. Pairing and name interpretation are handled by your existing prediction script.</p>
+      </div>
+
+      <label for="fileInput" class="dropzone" id="dropzone">
+        <input id="fileInput" type="file" accept=".jpg,.jpeg" multiple>
+        <span class="dropzone-title">Drop JPG/JPEG files here</span>
+        <span class="dropzone-text">or click to browse files</span>
+      </label>
+
+      <div class="selected-files">
+        <h3>Selected Files</h3>
+        <ul id="fileList"></ul>
+      </div>
+
+      <div class="actions">
+        <button id="runButton" type="button">Run Prediction</button>
+        <button id="clearFilesButton" class="secondary-button" type="button">Clear All</button>
+      </div>
+
+      <div id="progressCard" class="progress-card hidden" aria-live="polite">
+        <div class="progress-head">
+          <span>Pipeline Progress</span>
+          <strong id="progressPercent">0%</strong>
+        </div>
+        <div class="progress-track">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <pre id="progressLogs" class="progress-logs"></pre>
+      </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel results-panel">
+      <div class="panel-head">
+        <h2>Prediction Results</h2>
+        <p>Results are read from the generated prediction output after processing.</p>
+        <a id="downloadCsvButton" class="download-button hidden" href="#">Download CSV</a>
+      </div>
+
+      <div class="table-wrap">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>Left Image</th>
+              <th>Right Image</th>
+              <th>Prediction</th>
+              <th>Probability</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <details class="logs-box">
+        <summary>View Pipeline Logs</summary>
+        <pre id="logs"></pre>
+      </details>
+
+      <section id="evaluationPanel" class="evaluation-panel hidden">
+        <div class="panel-head">
+          <h3>Calculate Measures</h3>
+          <p>Select ground truth for each predicted pair, then compute metrics.</p>
+        </div>
+
+        <div class="table-wrap">
+          <table id="groundTruthTable">
+            <thead>
+              <tr>
+                <th>Left Image</th>
+                <th>Right Image</th>
+                <th>Prediction</th>
+                <th>Probability</th>
+                <th>Ground Truth</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="actions">
+          <button id="calculateMetricsButton" type="button">Calculate Measures</button>
+        </div>
+
+        <div id="metricsStatus" class="status" aria-live="polite"></div>
+
+        <div id="metricsResult" class="metrics-result hidden">
+          <div id="metricsCards" class="metrics-cards"></div>
+          <div class="confusion-box">
+            <h4>Confusion Matrix</h4>
+            <table id="confusionTable" class="confusion-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Pred Control</th>
+                  <th>Pred Diabetic</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>Actual Control</th>
+                  <td id="cm-tn">0</td>
+                  <td id="cm-fp">0</td>
+                </tr>
+                <tr>
+                  <th>Actual Diabetic</th>
+                  <td id="cm-fn">0</td>
+                  <td id="cm-tp">0</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <pre id="metricsNotes" class="metrics-notes"></pre>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

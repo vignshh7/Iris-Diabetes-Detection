@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: iris-diabetes-backend
+    env: python
+    rootDir: deployable-app/backend
+    plan: starter
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 900
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: CORS_ORIGINS
+        value: "*"
+
+  - type: static
+    name: iris-diabetes-frontend
+    rootDir: deployable-app/frontend
+    buildCommand: |
+      if [ -n "$API_BASE_URL" ]; then
+        printf 'window.__API_BASE__ = "%s";\n' "$API_BASE_URL" > config.js
+      fi
+    staticPublishPath: .
+    envVars:
+      - key: API_BASE_URL
+        sync: false
