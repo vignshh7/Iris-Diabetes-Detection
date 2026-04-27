@@ -523,8 +523,7 @@ def cancel_active_job():
             logs.append(f"[INFO] {reason}")
             job["logs"] = logs[-300:]
             cancelled_count += 1
-
-                _append_backend_log(f"job={job['jobId']} cancelled: {reason}")
+            _append_backend_log(f"job={job['jobId']} cancelled: {reason}")
 
     return jsonify({"ok": True, "cancelled": cancelled_count})
 
