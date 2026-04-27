@@ -10,7 +10,15 @@ fs.rmSync(distDir, { recursive: true, force: true });
 fs.mkdirSync(distDir, { recursive: true });
 
 for (const fileName of filesToCopy) {
-  fs.copyFileSync(path.join(rootDir, fileName), path.join(distDir, fileName));
+  const sourcePath = path.join(rootDir, fileName);
+  const targetPath = path.join(distDir, fileName);
+
+  if (!fs.existsSync(sourcePath)) {
+    console.warn(`Skipping missing file: ${fileName}`);
+    continue;
+  }
+
+  fs.copyFileSync(sourcePath, targetPath);
 }
 
 fs.writeFileSync(path.join(distDir, 'config.js'), `window.__API_BASE__ = ${JSON.stringify(apiBaseUrl)};\n`, 'utf8');
