@@ -26,6 +26,15 @@ const backendConnectionBadge = document.getElementById("backendConnectionBadge")
 const loadBackendLogsButton = document.getElementById("loadBackendLogsButton");
 const backendLogsStatus = document.getElementById("backendLogsStatus");
 const backendLogs = document.getElementById("backendLogs");
+const loginGate = document.getElementById("loginGate");
+const appContent = document.getElementById("appContent");
+const loginBackendState = document.getElementById("loginBackendState");
+const loginForm = document.getElementById("loginForm");
+const loginUser = document.getElementById("loginUser");
+const loginPass = document.getElementById("loginPass");
+const loginButton = document.getElementById("loginButton");
+const retryBackendButton = document.getElementById("retryBackendButton");
+const loginStatus = document.getElementById("loginStatus");
 
 const API_BASE = (window.__API_BASE__ || "").replace(/\/$/, "");
 
@@ -41,15 +50,50 @@ let progressTimer = null;
 let latestPredictionRows = [];
 let backendReady = false;
 let backendAlertShown = false;
+let isAuthenticated = false;
 
-function setBackendConnectionState(state, message) {
-  if (!backendConnectionBadge) {
-    return;
+const VALID_USERNAME = "decoders123";
+const VALID_PASSWORD = "decoders123";
+
+function setLoginStatus(message, level = "") {
+  loginStatus.textContent = message;
+  loginStatus.className = `status ${level}`.trim();
+}
+
+function setLoginEnabled(enabled) {
+  loginButton.disabled = !enabled;
+  loginUser.disabled = !enabled;
+  loginPass.disabled = !enabled;
+}
+
+function updateAccessGate() {
+  const canEnter = backendReady && isAuthenticated;
+
+  if (appContent) {
+    appContent.classList.toggle("locked", !canEnter);
+    appContent.setAttribute("aria-hidden", canEnter ? "false" : "true");
   }
 
-  backendConnectionBadge.classList.remove("connected", "disconnected", "checking");
-  backendConnectionBadge.classList.add(state);
-  backendConnectionBadge.textContent = message;
+  if (loginGate) {
+    loginGate.classList.toggle("hidden", canEnter);
+  }
+
+  document.body.classList.toggle("app-gated", !canEnter);
+  setUiEnabled(canEnter);
+}
+
+function setBackendConnectionState(state, message) {
+  if (backendConnectionBadge) {
+    backendConnectionBadge.classList.remove("connected", "disconnected", "checking");
+    backendConnectionBadge.classList.add(state);
+    backendConnectionBadge.textContent = message;
+  }
+
+  if (loginBackendState) {
+    loginBackendState.classList.remove("connected", "disconnected", "checking");
+    loginBackendState.classList.add(state);
+    loginBackendState.textContent = message;
+  }
 }
 
 function setUiEnabled(enabled) {
@@ -63,8 +107,12 @@ function setUiEnabled(enabled) {
 }
 
 function blockWithBackendAlert(message) {
+  backendReady = false;
   setUiEnabled(false);
+  setLoginEnabled(false);
   setBackendConnectionState("disconnected", "Backend: Disconnected");
+  setLoginStatus("Backend not connected. Click Retry Connection.", "error");
+  updateAccessGate();
   setStatus(message, "error");
   if (!backendAlertShown) {
     window.alert("Backend not connected. Please try again later.");
@@ -82,7 +130,9 @@ function requireBackendConnection() {
 
 async function checkBackendConnection() {
   setUiEnabled(false);
+  setLoginEnabled(false);
   setBackendConnectionState("checking", "Backend: Checking...");
+  setLoginStatus("Checking backend connection...", "");
   setStatus("Checking backend connection...", "");
 
   let timeoutId = null;
@@ -103,9 +153,11 @@ async function checkBackendConnection() {
 
     backendReady = true;
     backendAlertShown = false;
-    setUiEnabled(true);
+    setLoginEnabled(true);
     setBackendConnectionState("connected", "Backend: Connected");
-    setStatus("Backend connected. Select files to begin.", "success");
+    setLoginStatus("Backend connected. Enter valid credentials.", "success");
+    setStatus("Backend connected. Login required to continue.", "success");
+    updateAccessGate();
   } catch (error) {
     backendReady = false;
     blockWithBackendAlert(`Backend not connected: ${error.message}`);
@@ -114,6 +166,32 @@ async function checkBackendConnection() {
       clearTimeout(timeoutId);
     }
   }
+}
+
+function handleLoginSubmit(event) {
+  event.preventDefault();
+
+  if (!backendReady) {
+    setLoginStatus("Backend not connected. Please retry connection first.", "error");
+    window.alert("Backend not connected. Please try again later.");
+    return;
+  }
+
+  const username = (loginUser.value || "").trim();
+  const password = loginPass.value || "";
+
+  if (username !== VALID_USERNAME || password !== VALID_PASSWORD) {
+    isAuthenticated = false;
+    updateAccessGate();
+    setLoginStatus("Invalid ID or password.", "error");
+    window.alert("Invalid login credentials.");
+    return;
+  }
+
+  isAuthenticated = true;
+  setLoginStatus("Login successful. Entering website...", "success");
+  setStatus("Login successful. You can now use the website.", "success");
+  updateAccessGate();
 }
 
 async function readApiPayload(response) {
@@ -548,6 +626,8 @@ runButton.addEventListener("click", runPrediction);
 clearFilesButton.addEventListener("click", clearSelectedFiles);
 calculateMetricsButton.addEventListener("click", calculateMeasures);
 loadBackendLogsButton.addEventListener("click", loadBackendLogs);
+loginForm.addEventListener("submit", handleLoginSubmit);
+retryBackendButton.addEventListener("click", checkBackendConnection);
 
 window.addEventListener("beforeunload", () => {
   if (!backendReady) {
@@ -577,5 +657,8 @@ dropzone.addEventListener("drop", (event) => {
 });
 
 renderSelectedFiles();
+setLoginEnabled(false);
+setLoginStatus("Checking backend connection...", "");
 setBackendConnectionState("checking", "Backend: Checking...");
+updateAccessGate();
 checkBackendConnection();

@@ -11,11 +11,36 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
 </head>
-<body>
+<body class="app-gated">
   <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
   <div class="bg-shape bg-shape-2" aria-hidden="true"></div>
 
-  <main class="page">
+  <section id="loginGate" class="login-gate" aria-live="polite">
+    <div class="login-card">
+      <p class="login-eyebrow">Secure Access</p>
+      <h2>Login To Iris Diabetes Portal</h2>
+      <p class="login-subtitle">Backend must be connected, then enter valid credentials to access the website.</p>
+
+      <div class="login-connection-row">
+        <span id="loginBackendState" class="connection-badge checking">Backend: Checking...</span>
+        <button id="retryBackendButton" class="secondary-button" type="button">Retry Connection</button>
+      </div>
+
+      <form id="loginForm" class="login-form" autocomplete="off">
+        <label for="loginUser">User ID</label>
+        <input id="loginUser" name="username" type="text" placeholder="Enter user ID" required>
+
+        <label for="loginPass">Password</label>
+        <input id="loginPass" name="password" type="password" placeholder="Enter password" required>
+
+        <button id="loginButton" type="submit">Enter Website</button>
+      </form>
+
+      <div id="loginStatus" class="status"></div>
+    </div>
+  </section>
+
+  <main id="appContent" class="page locked" aria-hidden="true">
     <header class="hero">
       <div class="hero-top">
         <p class="eyebrow">Diabetes Detection</p>
