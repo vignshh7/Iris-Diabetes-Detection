@@ -35,6 +35,7 @@ const loginPass = document.getElementById("loginPass");
 const loginButton = document.getElementById("loginButton");
 const retryBackendButton = document.getElementById("retryBackendButton");
 const loginStatus = document.getElementById("loginStatus");
+const toastContainer = document.getElementById("toastContainer");
 
 const API_BASE = (window.__API_BASE__ || "").replace(/\/$/, "");
 
@@ -58,6 +59,33 @@ const VALID_PASSWORD = "decoders123";
 function setLoginStatus(message, level = "") {
   loginStatus.textContent = message;
   loginStatus.className = `status ${level}`.trim();
+}
+
+function showToast(message, type = "info", timeoutMs = 3600) {
+  if (!toastContainer) {
+    return;
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.setAttribute("role", type === "error" ? "alert" : "status");
+  toast.innerHTML = `
+    <div class="toast-content">
+      <strong>${type === "error" ? "Error" : type === "success" ? "Success" : "Notice"}</strong>
+      <span>${message}</span>
+    </div>
+    <button type="button" class="toast-close" aria-label="Dismiss notification">&times;</button>
+  `;
+
+  const closeToast = () => {
+    toast.classList.add("closing");
+    window.setTimeout(() => toast.remove(), 180);
+  };
+
+  toast.querySelector(".toast-close").addEventListener("click", closeToast);
+  toastContainer.appendChild(toast);
+
+  window.setTimeout(closeToast, timeoutMs);
 }
 
 function setLoginEnabled(enabled) {
@@ -115,7 +143,7 @@ function blockWithBackendAlert(message) {
   updateAccessGate();
   setStatus(message, "error");
   if (!backendAlertShown) {
-    window.alert("Backend not connected. Please try again later.");
+    showToast("Backend not connected. Please try again later.", "error", 5000);
     backendAlertShown = true;
   }
 }
@@ -173,7 +201,7 @@ function handleLoginSubmit(event) {
 
   if (!backendReady) {
     setLoginStatus("Backend not connected. Please retry connection first.", "error");
-    window.alert("Backend not connected. Please try again later.");
+    showToast("Backend not connected. Please try again later.", "error", 5000);
     return;
   }
 
@@ -184,13 +212,14 @@ function handleLoginSubmit(event) {
     isAuthenticated = false;
     updateAccessGate();
     setLoginStatus("Invalid ID or password.", "error");
-    window.alert("Invalid login credentials.");
+    showToast("Invalid login credentials.", "error", 4200);
     return;
   }
 
   isAuthenticated = true;
   setLoginStatus("Login successful. Entering website...", "success");
   setStatus("Login successful. You can now use the website.", "success");
+  showToast("Login successful. Welcome.", "success", 2800);
   updateAccessGate();
 }
 
