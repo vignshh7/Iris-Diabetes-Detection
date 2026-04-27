@@ -236,6 +236,64 @@ async function readApiPayload(response) {
   };
 }
 
+async function readXhrPayload(xhr) {
+  const contentType = xhr.getResponseHeader("content-type") || "";
+  const responseText = xhr.responseText || "";
+
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(responseText || "{}");
+    } catch (error) {
+      return {
+        ok: false,
+        message: `Server returned invalid JSON: ${error.message}`,
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    message: responseText ? `Server returned non-JSON response: ${responseText.slice(0, 140)}` : "Server returned an empty response.",
+  };
+}
+
+function sendFormDataWithProgress(url, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (!event.lengthComputable) {
+        return;
+      }
+
+      const percent = Math.round((event.loaded / event.total) * 100);
+      onProgress(percent, event.loaded, event.total);
+    });
+
+    xhr.addEventListener("load", async () => {
+      try {
+        resolve({
+          status: xhr.status,
+          payload: await readXhrPayload(xhr),
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      reject(new Error("Upload failed due to a network error."));
+    });
+
+    xhr.addEventListener("abort", () => {
+      reject(new Error("Upload was cancelled."));
+    });
+
+    xhr.send(formData);
+  });
+}
+
 function setStatus(message, level = "") {
   statusBox.textContent = message;
   statusBox.className = `status ${level}`.trim();
@@ -613,18 +671,22 @@ async function runPrediction() {
   evaluationPanel.classList.add("hidden");
   latestPredictionRows = [];
   showProgressBox();
-  setProgress(0, ["Starting prediction..."]);
-  setStatus("Running prediction pipeline. This may take a while...", "");
+  setProgress(0, ["Preparing upload..."]);
+  setStatus("Uploading selected images...", "");
 
   try {
-    const response = await fetch(apiUrl("/api/run-prediction"), {
-      method: "POST",
-      body: formData,
+    const fileCount = selectedFiles.length;
+    const { status, payload } = await sendFormDataWithProgress(apiUrl("/api/run-prediction"), formData, (percent, loadedBytes, totalBytes) => {
+      setProgress(percent, [
+        `Uploading ${fileCount} file(s)...`,
+        `${percent}% complete (${loadedBytes}/${totalBytes} bytes)`,
+      ]);
+      setStatus(`Uploading selected images... ${percent}%`, "");
     });
 
-    const payload = await readApiPayload(response);
+    setProgress(100, ["Upload complete. Waiting for prediction response..."]);
 
-    if (!response.ok || !payload.ok) {
+    if (status < 200 || status >= 300 || !payload.ok) {
       const invalidInfo = payload.invalidFiles?.length
         ? ` Invalid files: ${payload.invalidFiles.join(", ")}`
         : "";
@@ -635,6 +697,8 @@ async function runPrediction() {
       runButton.disabled = false;
       return;
     }
+
+    setStatus("Upload complete. Running prediction pipeline...", "");
 
     if (payload.skippedPatients?.length) {
       setStatus(`Prediction started. Skipping unpaired patients: ${payload.skippedPatients.join(", ")}.`, "");
