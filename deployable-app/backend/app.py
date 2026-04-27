@@ -29,12 +29,14 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+
 REALDATA_IMAGES_DIR = os.path.join(PROJECT_ROOT, "realdata", "images")
 PREDICTION_CSV = os.path.join(PROJECT_ROOT, "realdata_predictions.csv")
 WEBAPP_RUNS_DIR = os.path.join(PROJECT_ROOT, "temp", "webapp_runs")
 ALLOWED_EXTENSIONS = {"jpg", "jpeg"}
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
 
 cors_origins_raw = os.getenv("CORS_ORIGINS", "*")
 cors_origins = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
@@ -260,6 +262,22 @@ def _safe_round(value, digits: int = 4):
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"ok": True, "message": "Backend is running."})
+
+
+@app.route("/", methods=["GET"])
+def root():
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    if os.path.exists(index_path):
+        return send_file(index_path)
+
+    return jsonify(
+        {
+            "ok": True,
+            "message": "Iris Diabetes backend is running.",
+            "health": "/api/health",
+            "predict": "/api/run-prediction",
+        }
+    )
 
 
 @app.route("/api/run-prediction", methods=["POST"])

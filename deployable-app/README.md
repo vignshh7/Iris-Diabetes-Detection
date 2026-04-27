@@ -4,7 +4,7 @@ This folder contains a split deployment setup:
 
 - `frontend/` - static website for uploads and results UI
 - `backend/` - Flask API that runs your existing prediction pipeline
-- `render.yaml` - Render Blueprint to deploy both services
+- `render.yaml` - legacy Render Blueprint, kept for reference only
 
 ## Backend
 
@@ -40,18 +40,42 @@ window.__API_BASE__ = "http://127.0.0.1:5000";
 
 If empty (`""`), frontend assumes same-origin API.
 
-## Render Deployment
+## Recommended Free Deployment
 
-1. Push this repository to GitHub.
-2. In Render, create Blueprint and select `deployable-app/render.yaml`.
-3. Deploy backend service first.
-4. Copy backend public URL.
-5. In static frontend service env vars, set `API_BASE_URL` to backend URL.
-   Example: `https://iris-diabetes-backend.onrender.com`
-6. Optional but recommended: set backend `CORS_ORIGINS` to the frontend URL instead of `*`.
+Use this stack:
+
+- Frontend: Vercel static site
+- Backend: Hugging Face Spaces Docker app
+
+### 1) Deploy backend to Hugging Face Spaces
+
+1. Create a new Space on Hugging Face.
+2. Choose `Docker` as the SDK.
+3. Use the repository root as the Space repo so it includes `src/`, `models/`, `config.py`, and `requirements.txt`.
+4. Make sure the repo-root `Dockerfile` exists.
+5. Let Spaces build and start the API.
+
+### 2) Deploy frontend to Vercel
+
+1. Create a new Vercel project from this GitHub repo.
+2. Set the root directory to `deployable-app/frontend`.
+3. Set `API_BASE_URL` in Vercel Environment Variables to your Hugging Face backend URL.
+4. Deploy the static site.
+
+### 3) Production CORS
+
+Set the backend environment variable:
+
+```text
+CORS_ORIGINS=https://your-vercel-app.vercel.app
+```
+
+If you are testing, `*` works, but a specific origin is better.
 
 ## Notes
 
 - Your model files in `models/` are required in the same repository.
 - Prediction can take time; timeout is configured for long-running jobs.
 - Supported upload file types: `.jpg`, `.jpeg`.
+- The frontend build step writes `config.js` from `API_BASE_URL` before Vercel serves the site.
+- The repo-root Dockerfile is designed for Spaces and runs Gunicorn on the platform port.
