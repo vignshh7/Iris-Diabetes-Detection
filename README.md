@@ -60,6 +60,8 @@ eye_project/
 
 ## Setup
 
+Use Python 3.12 or 3.11 for this project. Python 3.13+ is not currently supported by the pinned deep-learning dependencies on Windows.
+
 ```bash
 python -m venv .venv
 .venv\Scripts\activate        # Windows

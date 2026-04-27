@@ -4,13 +4,78 @@ cls
 color 0F
 title Eye Project - Main Menu
 
-rem Check if virtual environment exists
+rem Ensure virtual environment exists
+if exist ".venv\pyvenv.cfg" (
+    findstr /c:"version = 3.10." /c:"version = 3.11." /c:"version = 3.12." ".venv\pyvenv.cfg" >nul
+    if errorlevel 1 (
+        set "VENV_VERSION="
+        for /f "tokens=2 delims==" %%A in ('findstr /b "version =" ".venv\pyvenv.cfg"') do set "VENV_VERSION=%%A"
+        if defined VENV_VERSION (
+            echo Existing .venv uses Python %VENV_VERSION%, which is not supported.
+        ) else (
+            echo Existing .venv uses an unsupported Python version.
+        )
+        echo Recreating .venv with Python 3.12 or 3.11...
+        rmdir /s /q .venv
+    )
+)
+
 if not exist ".venv\Scripts\activate.bat" (
-    echo ❌ Virtual environment not found at .venv\
-    echo Please create a virtual environment first:
-    echo    python -m venv .venv
-    echo    .venv\Scripts\activate
-    echo    pip install -r requirements.txt
+    echo Virtual environment not found. Creating .venv...
+    set "VENV_CREATED="
+    set "INTERPRETER_FOUND="
+
+    if exist "%LocalAppData%\Programs\Python\Python312\python.exe" (
+        set "INTERPRETER_FOUND=1"
+        "%LocalAppData%\Programs\Python\Python312\python.exe" -m venv .venv
+        if not errorlevel 1 set "VENV_CREATED=1"
+    )
+    if not defined VENV_CREATED if exist "%LocalAppData%\Programs\Python\Python311\python.exe" (
+        set "INTERPRETER_FOUND=1"
+        "%LocalAppData%\Programs\Python\Python311\python.exe" -m venv .venv
+        if not errorlevel 1 set "VENV_CREATED=1"
+    )
+    if not defined VENV_CREATED if exist "%LocalAppData%\Programs\Python\Python310\python.exe" (
+        set "INTERPRETER_FOUND=1"
+        "%LocalAppData%\Programs\Python\Python310\python.exe" -m venv .venv
+        if not errorlevel 1 set "VENV_CREATED=1"
+    )
+
+    if not defined VENV_CREATED (
+        where py >nul 2>nul
+        if not errorlevel 1 (
+            set "INTERPRETER_FOUND=1"
+            py -3.12 -m venv .venv
+            if not errorlevel 1 set "VENV_CREATED=1"
+            if not defined VENV_CREATED py -3.11 -m venv .venv
+            if not errorlevel 1 set "VENV_CREATED=1"
+            if not defined VENV_CREATED py -3.10 -m venv .venv
+            if not errorlevel 1 set "VENV_CREATED=1"
+        )
+    )
+
+    if not defined VENV_CREATED (
+        if defined INTERPRETER_FOUND (
+            echo ❌ Python was found, but the virtual environment could not be created.
+            echo Close any terminals or programs using .venv, delete the .venv folder, then run this script again.
+        ) else (
+            echo ❌ No supported Python interpreter was found.
+            echo Please install Python 3.12 or 3.11, then run this script again.
+        )
+        pause
+        exit /b 1
+    )
+
+    if errorlevel 1 (
+        echo ❌ Failed to create .venv.
+        echo Please install Python and make sure it is available on PATH, then run this script again.
+        pause
+        exit /b 1
+    )
+)
+
+if not exist ".venv\Scripts\activate.bat" (
+    echo ❌ Virtual environment setup is incomplete: .venv\Scripts\activate.bat was not created.
     pause
     exit /b 1
 )
