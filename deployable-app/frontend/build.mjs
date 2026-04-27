@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const rootDir = process.cwd();
 const distDir = path.join(rootDir, 'dist');
-const filesToCopy = ['index.html', 'style.css', 'app.js'];
+const filesToCopy = ['index.html', 'style.css', 'app.js', 'favicon.svg'];
 const apiBaseUrl = process.env.API_BASE_URL || '';
 
 fs.rmSync(distDir, { recursive: true, force: true });

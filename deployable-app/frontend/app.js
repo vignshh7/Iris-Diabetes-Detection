@@ -35,6 +35,67 @@ function apiUrl(path) {
 let selectedFiles = [];
 let progressTimer = null;
 let latestPredictionRows = [];
+let backendReady = false;
+let backendAlertShown = false;
+
+function setUiEnabled(enabled) {
+  fileInput.disabled = !enabled;
+  runButton.disabled = !enabled;
+  clearFilesButton.disabled = !enabled;
+  calculateMetricsButton.disabled = !enabled;
+  dropzone.style.pointerEvents = enabled ? "" : "none";
+  dropzone.style.opacity = enabled ? "" : "0.55";
+}
+
+function blockWithBackendAlert(message) {
+  setUiEnabled(false);
+  setStatus(message, "error");
+  if (!backendAlertShown) {
+    window.alert("Backend not connected. Please try again later.");
+    backendAlertShown = true;
+  }
+}
+
+function requireBackendConnection() {
+  if (backendReady) {
+    return true;
+  }
+  blockWithBackendAlert("Backend not connected. Please try again later.");
+  return false;
+}
+
+async function checkBackendConnection() {
+  setUiEnabled(false);
+  setStatus("Checking backend connection...", "");
+
+  let timeoutId = null;
+  try {
+    const controller = new AbortController();
+    timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    const response = await fetch(apiUrl("/api/health"), {
+      method: "GET",
+      signal: controller.signal,
+    });
+    const payload = await readApiPayload(response);
+
+    if (!response.ok || !payload.ok) {
+      const errorMessage = payload.message || `Health check failed with status ${response.status}.`;
+      throw new Error(errorMessage);
+    }
+
+    backendReady = true;
+    setUiEnabled(true);
+    setStatus("Backend connected. Select files to begin.", "success");
+  } catch (error) {
+    backendReady = false;
+    blockWithBackendAlert(`Backend not connected: ${error.message}`);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 async function readApiPayload(response) {
   const contentType = response.headers.get("content-type") || "";
@@ -75,6 +136,10 @@ function renderSelectedFiles() {
 }
 
 function updateFiles(fileListObject) {
+  if (!requireBackendConnection()) {
+    return;
+  }
+
   const incomingFiles = Array.from(fileListObject || []);
   const existingByKey = new Map(
     selectedFiles.map((file) => [`${file.name}::${file.size}::${file.lastModified}`, file])
@@ -97,6 +162,10 @@ function updateFiles(fileListObject) {
 }
 
 function clearSelectedFiles() {
+  if (!requireBackendConnection()) {
+    return;
+  }
+
   selectedFiles = [];
   fileInput.value = "";
   renderSelectedFiles();
@@ -207,6 +276,10 @@ function renderMetrics(payload) {
 }
 
 async function calculateMeasures() {
+  if (!requireBackendConnection()) {
+    return;
+  }
+
   if (!latestPredictionRows.length) {
     setMetricsStatus("Run prediction first.", "error");
     return;
@@ -363,6 +436,10 @@ function cancelActiveJob(reason) {
 }
 
 async function runPrediction() {
+  if (!requireBackendConnection()) {
+    return;
+  }
+
   if (!selectedFiles.length) {
     setStatus("Please select files before running prediction.", "error");
     return;
@@ -419,6 +496,9 @@ clearFilesButton.addEventListener("click", clearSelectedFiles);
 calculateMetricsButton.addEventListener("click", calculateMeasures);
 
 window.addEventListener("beforeunload", () => {
+  if (!backendReady) {
+    return;
+  }
   cancelActiveJob("Prediction cancelled due to page refresh.");
 });
 
@@ -443,4 +523,4 @@ dropzone.addEventListener("drop", (event) => {
 });
 
 renderSelectedFiles();
-setStatus("Select files to begin.");
+checkBackendConnection();
