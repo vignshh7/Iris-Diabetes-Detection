@@ -22,6 +22,10 @@ const cmTn = document.getElementById("cm-tn");
 const cmFp = document.getElementById("cm-fp");
 const cmFn = document.getElementById("cm-fn");
 const cmTp = document.getElementById("cm-tp");
+const backendConnectionBadge = document.getElementById("backendConnectionBadge");
+const loadBackendLogsButton = document.getElementById("loadBackendLogsButton");
+const backendLogsStatus = document.getElementById("backendLogsStatus");
+const backendLogs = document.getElementById("backendLogs");
 
 const API_BASE = (window.__API_BASE__ || "").replace(/\/$/, "");
 
@@ -38,17 +42,29 @@ let latestPredictionRows = [];
 let backendReady = false;
 let backendAlertShown = false;
 
+function setBackendConnectionState(state, message) {
+  if (!backendConnectionBadge) {
+    return;
+  }
+
+  backendConnectionBadge.classList.remove("connected", "disconnected", "checking");
+  backendConnectionBadge.classList.add(state);
+  backendConnectionBadge.textContent = message;
+}
+
 function setUiEnabled(enabled) {
   fileInput.disabled = !enabled;
   runButton.disabled = !enabled;
   clearFilesButton.disabled = !enabled;
   calculateMetricsButton.disabled = !enabled;
+  loadBackendLogsButton.disabled = !enabled;
   dropzone.style.pointerEvents = enabled ? "" : "none";
   dropzone.style.opacity = enabled ? "" : "0.55";
 }
 
 function blockWithBackendAlert(message) {
   setUiEnabled(false);
+  setBackendConnectionState("disconnected", "Backend: Disconnected");
   setStatus(message, "error");
   if (!backendAlertShown) {
     window.alert("Backend not connected. Please try again later.");
@@ -66,6 +82,7 @@ function requireBackendConnection() {
 
 async function checkBackendConnection() {
   setUiEnabled(false);
+  setBackendConnectionState("checking", "Backend: Checking...");
   setStatus("Checking backend connection...", "");
 
   let timeoutId = null;
@@ -85,7 +102,9 @@ async function checkBackendConnection() {
     }
 
     backendReady = true;
+    backendAlertShown = false;
     setUiEnabled(true);
+    setBackendConnectionState("connected", "Backend: Connected");
     setStatus("Backend connected. Select files to begin.", "success");
   } catch (error) {
     backendReady = false;
@@ -201,6 +220,11 @@ function renderResults(rows) {
 function setMetricsStatus(message, level = "") {
   metricsStatus.textContent = message;
   metricsStatus.className = `status ${level}`.trim();
+}
+
+function setBackendLogsStatus(message, level = "") {
+  backendLogsStatus.textContent = message;
+  backendLogsStatus.className = `status ${level}`.trim();
 }
 
 function renderGroundTruthTable(rows) {
@@ -322,6 +346,35 @@ async function calculateMeasures() {
     setMetricsStatus(`Failed to calculate metrics: ${error.message}`, "error");
   } finally {
     calculateMetricsButton.disabled = false;
+  }
+}
+
+async function loadBackendLogs() {
+  if (!requireBackendConnection()) {
+    return;
+  }
+
+  loadBackendLogsButton.disabled = true;
+  setBackendLogsStatus("Loading backend logs...", "");
+
+  try {
+    const response = await fetch(apiUrl("/api/backend-logs"), {
+      method: "GET",
+    });
+    const payload = await readApiPayload(response);
+
+    if (!response.ok || !payload.ok) {
+      setBackendLogsStatus(payload.message || "Failed to load backend logs.", "error");
+      return;
+    }
+
+    const lines = Array.isArray(payload.logs) ? payload.logs : [];
+    backendLogs.textContent = lines.length ? lines.join("\n") : "No backend logs available yet.";
+    setBackendLogsStatus(`Loaded ${lines.length} backend log lines.`, "success");
+  } catch (error) {
+    setBackendLogsStatus(`Failed to load backend logs: ${error.message}`, "error");
+  } finally {
+    loadBackendLogsButton.disabled = false;
   }
 }
 
@@ -494,6 +547,7 @@ fileInput.addEventListener("change", (event) => {
 runButton.addEventListener("click", runPrediction);
 clearFilesButton.addEventListener("click", clearSelectedFiles);
 calculateMetricsButton.addEventListener("click", calculateMeasures);
+loadBackendLogsButton.addEventListener("click", loadBackendLogs);
 
 window.addEventListener("beforeunload", () => {
   if (!backendReady) {
@@ -523,4 +577,5 @@ dropzone.addEventListener("drop", (event) => {
 });
 
 renderSelectedFiles();
+setBackendConnectionState("checking", "Backend: Checking...");
 checkBackendConnection();

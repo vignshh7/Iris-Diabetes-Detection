@@ -17,7 +17,10 @@
 
   <main class="page">
     <header class="hero">
-      <p class="eyebrow">Diabetes Detection</p>
+      <div class="hero-top">
+        <p class="eyebrow">Diabetes Detection</p>
+        <span id="backendConnectionBadge" class="connection-badge checking">Backend: Checking...</span>
+      </div>
       <h1>Run Iris Prediction From Your Browser</h1>
       <p class="subtitle">
         Select paired eye images and run your existing ensemble model pipeline directly from this web interface.
@@ -86,6 +89,17 @@
         <summary>View Pipeline Logs</summary>
         <pre id="logs"></pre>
       </details>
+
+      <section class="backend-logs-panel">
+        <div class="actions">
+          <button id="loadBackendLogsButton" class="secondary-button" type="button">Load Backend Logs</button>
+        </div>
+        <div id="backendLogsStatus" class="status" aria-live="polite"></div>
+        <details class="logs-box">
+          <summary>View Backend Logs (HF)</summary>
+          <pre id="backendLogs">No backend logs loaded yet.</pre>
+        </details>
+      </section>
 
       <section id="evaluationPanel" class="evaluation-panel hidden">
         <div class="panel-head">

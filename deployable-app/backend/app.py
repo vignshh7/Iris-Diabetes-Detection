@@ -47,6 +47,19 @@ CORS(app, resources={r"/api/*": {"origins": cors_origins}})
 
 _jobs: Dict[str, Dict] = {}
 _jobs_lock = threading.Lock()
+_backend_logs: List[str] = []
+_backend_logs_lock = threading.Lock()
+
+
+def _append_backend_log(line: str) -> None:
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    with _backend_logs_lock:
+        _backend_logs.append(f"[{timestamp}] {line}")
+        if len(_backend_logs) > 5000:
+            _backend_logs[:] = _backend_logs[-5000:]
+
+
+_append_backend_log("backend process initialized")
 
 
 def _set_job_fields(job_id: str, updates: Dict) -> None:
@@ -65,6 +78,8 @@ def _append_job_log(job_id: str, line: str) -> None:
             job["logs"] = job["logs"][-300:]
         job["lastUpdated"] = time.time()
         job["message"] = line
+
+    _append_backend_log(f"job={job_id} {line}")
 
 
 def _maybe_update_percent_from_log(job_id: str, line: str) -> None:
@@ -102,6 +117,8 @@ def _start_prediction_job(job_id: str) -> None:
 
         if not run_root:
             raise RuntimeError("Missing run directory for prediction job.")
+
+        _append_backend_log(f"job={job_id} prediction started")
 
         _set_job_fields(job_id, {"status": "running", "percent": 1, "message": "Starting prediction pipeline..."})
 
@@ -156,7 +173,9 @@ def _start_prediction_job(job_id: str) -> None:
                 "completedAt": time.time(),
             },
         )
+        _append_backend_log(f"job={job_id} prediction completed")
     except Exception as exc:  # noqa: BLE001
+        _append_backend_log(f"job={job_id} prediction failed: {exc}")
         _set_job_fields(
             job_id,
             {
@@ -262,6 +281,28 @@ def _safe_round(value, digits: int = 4):
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"ok": True, "message": "Backend is running."})
+
+
+@app.route("/api/backend-logs", methods=["GET"])
+def backend_logs():
+    limit_text = (request.args.get("limit") or "0").strip()
+    try:
+        limit = int(limit_text) if limit_text else 0
+    except ValueError:
+        limit = 0
+
+    with _backend_logs_lock:
+        logs = _backend_logs[-limit:] if limit > 0 else list(_backend_logs)
+        total = len(_backend_logs)
+
+    return jsonify(
+        {
+            "ok": True,
+            "count": len(logs),
+            "total": total,
+            "logs": logs,
+        }
+    )
 
 
 @app.route("/", methods=["GET"])
@@ -483,6 +524,8 @@ def cancel_active_job():
             job["logs"] = logs[-300:]
             cancelled_count += 1
 
+                _append_backend_log(f"job={job['jobId']} cancelled: {reason}")
+
     return jsonify({"ok": True, "cancelled": cancelled_count})
 
 
@@ -570,5 +613,6 @@ def calculate_metrics():
 
 
 if __name__ == "__main__":
+    _append_backend_log("backend process started")
     port = int(os.getenv("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
